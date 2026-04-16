@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#14532d"/>
+<title>AGRIVALE - Gestor</title>
+<!-- Firebase Compat (sem ES modules) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#f8fafc;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:80px;}
+button,input{font-family:inherit;}
+.header{background:linear-gradient(135deg,#14532d,#166534,#15803d);padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;}
+.header h1{font-size:17px;font-weight:900;}
+.header p{font-size:11px;opacity:.75;margin-top:1px;}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #d1fae5;position:sticky;top:0;z-index:10;}
+.tab{flex:1;padding:10px 2px;border:none;background:transparent;border-bottom:3px solid transparent;font-size:10px;cursor:pointer;color:#666;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.tab span{font-size:15px;}
+.tab.active{background:#f0fdf4;border-bottom:3px solid #16a34a;font-weight:700;color:#166534;}
+.msg{margin:10px 14px 0;padding:10px 14px;border-radius:10px;font-weight:600;font-size:13px;text-align:center;display:none;}
+.msg.ok{background:#dcfce7;color:#166534;}
+.msg.erro{background:#fee2e2;color:#991b1b;}
+.screen{display:none;padding:14px;}
+.screen.active{display:block;}
+.card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:12px;}
+.card-title{font-size:15px;font-weight:800;margin-bottom:12px;}
+.okr-card{background:linear-gradient(135deg,#14532d,#15803d);border-radius:14px;padding:16px;color:#fff;margin-bottom:12px;}
+.okr-inner{display:flex;gap:8px;margin-top:10px;}
+.okr-score{flex:1;background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;}
+.okr-score .num{font-size:30px;font-weight:900;}
+.okr-score .lbl{font-size:10px;opacity:.8;}
+.okr-desc{flex:2;background:rgba(255,255,255,.15);border-radius:10px;padding:10px;}
+.bar-wrap{background:#e5e7eb;border-radius:99px;height:10px;margin-bottom:3px;}
+.bar-fill{height:10px;border-radius:99px;transition:width .5s;}
+.row-bet{display:flex;justify-content:space-between;align-items:center;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat{background:#f8fafc;border-radius:10px;padding:10px;text-align:center;}
+.stat .icon{font-size:18px;}
+.stat .val{font-size:14px;font-weight:800;color:#1e3a5f;margin-top:2px;}
+.stat .lbl{font-size:10px;color:#888;}
+.kpi-tipo{border-radius:12px;padding:12px;margin-bottom:10px;}
+.kpi-tipo.p{background:#fffbeb;border-left:4px solid #f59e0b;}
+.kpi-tipo.g{background:#f0fdf4;border-left:4px solid #16a34a;}
+.btn-primary{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;font-size:15px;font-weight:800;margin-top:4px;}
+.input-sm{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #e5e7eb;font-size:14px;margin-top:3px;margin-bottom:10px;}
+.input-lg{width:100%;padding:12px;border-radius:10px;border:2px solid #16a34a;font-size:20px;font-weight:800;text-align:center;color:#14532d;margin-top:3px;margin-bottom:12px;}
+.preview-preco{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-bottom:12px;display:none;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;}
+.tag-red{background:#fee2e2;color:#991b1b;border-radius:6px;padding:3px 10px;font-weight:800;font-size:14px;}
+.tag-green{background:#dcfce7;color:#166534;border-radius:6px;padding:3px 10px;font-weight:800;font-size:14px;}
+.tag-yellow{background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 10px;font-weight:800;font-size:14px;}
+.price-log-item{border-left:3px solid #16a34a;padding-left:10px;margin-bottom:14px;}
+.price-log-item.p{border-left-color:#f59e0b;}
+.price-log-item .pli-time{font-size:10px;color:#aaa;margin-bottom:4px;}
+.price-log-item .pli-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
+.price-log-item .pli-motivo{font-size:11px;color:#555;background:#f8fafc;border-radius:6px;padding:4px 8px;}
+.hist-item{border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.hist-item.p{background:#fffbeb;border-left:3px solid #f59e0b;}
+.hist-item.g{background:#f0fdf4;border-left:3px solid #16a34a;}
+.green-header{border-radius:12px;padding:16px;color:#fff;text-align:center;margin-bottom:0;}
+.green-header.amarelo{background:linear-gradient(135deg,#78350f,#d97706);}
+.green-header.verde{background:linear-gradient(135deg,#14532d,#16a34a);}
+.green-header .big{font-size:32px;font-weight:900;letter-spacing:-1px;}
+.periodo-btn{padding:6px 12px;border-radius:8px;border:1.5px solid #e5e7eb;background:#f9fafb;font-size:12px;font-weight:600;color:#555;}
+.periodo-btn.active{background:#f0fdf4;border-color:#16a34a;color:#166534;font-weight:800;}
+.chart-wrap{position:relative;height:200px;margin-top:8px;}
+.tipo-tab{flex:1;padding:8px;border-radius:8px;border:1.5px solid #e5e7eb;background:#f9fafb;font-size:12px;font-weight:600;color:#555;text-align:center;}
+.tipo-tab.ap{background:#fffbeb;border-color:#f59e0b;color:#92400e;font-weight:800;}
+.tipo-tab.ag{background:#f0fdf4;border-color:#16a34a;color:#166534;font-weight:800;}
+.tipo-tab.aa{background:#eff6ff;border-color:#3b82f6;color:#1d4ed8;font-weight:800;}
+.empty{text-align:center;color:#aaa;padding:24px;font-size:13px;}
+label{font-size:12px;font-weight:700;color:#555;display:block;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>🌾 AGRIVALE MOÇAMBIQUE</h1><p>Painel de Gestão</p></div>
+  <div id="sync-dot" style="font-size:20px">🔄</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-dashboard" onclick="mudarTela('dashboard')"><span>📊</span>Dashboard</button>
+  <button class="tab" id="tab-evolucao" onclick="mudarTela('evolucao')"><span>📈</span>Evolução</button>
+  <button class="tab" id="tab-precos" onclick="mudarTela('precos')"><span>💰</span>Preços</button>
+  <button class="tab" id="tab-metas" onclick="mudarTela('metas')"><span>🎯</span>Metas</button>
+  <button class="tab" id="tab-historico" onclick="mudarTela('historico')"><span>📋</span>Histórico</button>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<!-- DASHBOARD -->
+<div class="screen active" id="screen-dashboard">
+  <div class="okr-card">
+    <div style="font-size:12px;opacity:.8">OKR — Objetivo Estratégico</div>
+    <div style="font-size:15px;font-weight:800;margin-top:3px">🎯 Maximizar vendas e receita mensal</div>
+    <div class="okr-inner">
+      <div class="okr-score"><div class="num" id="okr-score">0%</div><div class="lbl">Score OKR</div></div>
+      <div class="okr-desc">
+        <div style="font-size:14px;font-weight:700" id="okr-status">🔴 Atenção</div>
+        <div style="font-size:11px;opacity:.8;margin-top:4px" id="okr-sub">Registe as primeiras vendas!</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">📊 KPIs por Tipo</div>
+    <div class="kpi-tipo p">
+      <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:8px">🥚 Favo Pequeno — MT <span id="kpi-preco-p">0.00</span></div>
+      <div class="row-bet" style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px"><span>Hoje: <b id="kpi-p-hoje">0</b>/<b id="kpi-p-meta-d">0</b></span><span id="kpi-p-perc-d" style="font-weight:800">0%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-p-d" style="width:0%"></div></div>
+      <div class="row-bet" style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px;margin-top:6px"><span>Mês: <b id="kpi-p-mes">0</b>/<b id="kpi-p-meta-m">0</b></span><span id="kpi-p-perc-m" style="font-weight:800">0%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-p-m" style="width:0%"></div></div>
+    </div>
+    <div class="kpi-tipo g">
+      <div style="font-size:13px;font-weight:800;color:#166534;margin-bottom:8px">🪺 Favo Grande — MT <span id="kpi-preco-g">0.00</span></div>
+      <div class="row-bet" style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px"><span>Hoje: <b id="kpi-g-hoje">0</b>/<b id="kpi-g-meta-d">0</b></span><span id="kpi-g-perc-d" style="font-weight:800">0%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-g-d" style="width:0%"></div></div>
+      <div class="row-bet" style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px;margin-top:6px"><span>Mês: <b id="kpi-g-mes">0</b>/<b id="kpi-g-meta-m">0</b></span><span id="kpi-g-perc-m" style="font-weight:800">0%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-g-m" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">💹 Indicadores Gerais</div>
+    <div class="grid2" style="margin-bottom:8px">
+      <div class="stat"><div class="icon">💵</div><div class="val" id="s-rec-hoje">MT 0</div><div class="lbl">Receita Hoje</div></div>
+      <div class="stat"><div class="icon">📅</div><div class="val" id="s-rec-mes">MT 0</div><div class="lbl">Receita do Mês</div></div>
+    </div>
+    <div class="grid2">
+      <div class="stat"><div class="icon">🛒</div><div class="val" id="s-vendas-hoje">0</div><div class="lbl">Vendas Hoje</div></div>
+      <div class="stat"><div class="icon">🎫</div><div class="val" id="s-ticket">—</div><div class="lbl">Ticket Médio</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">⚖️ Pequeno vs Grande (Hoje)</div>
+    <div class="chart-wrap"><canvas id="chart-pizza"></canvas></div>
+  </div>
+</div>
+
+<!-- EVOLUÇÃO -->
+<div class="screen" id="screen-evolucao">
+  <div class="card">
+    <div class="row-bet" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0;color:#14532d">📈 Evolução da Receita</div>
+      <div style="display:flex;gap:4px">
+        <button class="periodo-btn active" id="per-7" onclick="setPeriodo(7)">7d</button>
+        <button class="periodo-btn" id="per-15" onclick="setPeriodo(15)">15d</button>
+        <button class="periodo-btn" id="per-30" onclick="setPeriodo(30)">30d</button>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-receita"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">📦 Quantidade Vendida</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="tipo-tab ap" id="ttab-p" onclick="setTipoGraf('p')">🥚 Pequeno</button>
+      <button class="tipo-tab" id="ttab-g" onclick="setTipoGraf('g')">🪺 Grande</button>
+      <button class="tipo-tab" id="ttab-all" onclick="setTipoGraf('all')">📊 Ambos</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-qtd"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">🏆 Comparativo P vs G</div>
+    <div class="chart-wrap"><canvas id="chart-comp"></canvas></div>
+  </div>
+</div>
+
+<!-- PREÇOS -->
+<div class="screen" id="screen-precos">
+  <div class="grid2" style="margin-bottom:12px;gap:10px">
+    <div class="green-header amarelo"><div style="font-size:11px;opacity:.85">🥚 Favo Pequeno</div><div class="big" id="preco-p-big">MT 0</div></div>
+    <div class="green-header verde"><div style="font-size:11px;opacity:.85">🪺 Favo Grande</div><div class="big" id="preco-g-big">MT 0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">✏️ Alterar Preço</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="tipo-tab ap" id="ptab-p" onclick="setPtipoEdit('p')">🥚 Pequeno</button>
+      <button class="tipo-tab" id="ptab-g" onclick="setPtipoEdit('g')">🪺 Grande</button>
+    </div>
+    <label>Novo preço (MT)</label>
+    <input type="number" id="input-novo-preco" step="0.01" min="0.01" class="input-lg" placeholder="0.00" oninput="atualizarPrevPreco()"/>
+    <label>Motivo da alteração</label>
+    <input type="text" id="input-motivo" class="input-sm" placeholder="Ex: Aumento do fornecedor..."/>
+    <div class="preview-preco" id="prev-preco"></div>
+    <button class="btn-primary" onclick="salvarPreco()">💾 SALVAR NOVO PREÇO</button>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">📜 Histórico de Preços</div>
+    <div id="log-precos-list"><div class="empty">Nenhuma alteração ainda.</div></div>
+  </div>
+</div>
+
+<!-- METAS -->
+<div class="screen" id="screen-metas">
+  <div class="card">
+    <div class="card-title" style="color:#14532d">🎯 Definir Metas</div>
+    <div class="kpi-tipo p" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:10px">🥚 Favo Pequeno</div>
+      <label>Meta diária</label><input type="number" id="m-pd" class="input-sm"/>
+      <label>Meta mensal</label><input type="number" id="m-pm" class="input-sm" style="margin-bottom:0"/>
+    </div>
+    <div class="kpi-tipo g" style="margin-bottom:14px">
+      <div style="font-size:13px;font-weight:800;color:#166534;margin-bottom:10px">🪺 Favo Grande</div>
+      <label>Meta diária</label><input type="number" id="m-gd" class="input-sm"/>
+      <label>Meta mensal</label><input type="number" id="m-gm" class="input-sm" style="margin-bottom:0"/>
+    </div>
+    <button class="btn-primary" onclick="salvarMetas()">💾 SALVAR METAS</button>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:#14532d">📌 Metas Actuais</div>
+    <div class="grid2">
+      <div class="stat"><div class="icon">🥚</div><div class="val" id="m-view-pd">—</div><div class="lbl">Diária Pequeno</div></div>
+      <div class="stat"><div class="icon">🥚</div><div class="val" id="m-view-pm">—</div><div class="lbl">Mensal Pequeno</div></div>
+      <div class="stat"><div class="icon">🪺</div><div class="val" id="m-view-gd">—</div><div class="lbl">Diária Grande</div></div>
+      <div class="stat"><div class="icon">🪺</div><div class="val" id="m-view-gm">—</div><div class="lbl">Mensal Grande</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="screen" id="screen-historico">
+  <div class="card" style="padding:10px;margin:0 0 10px">
+    <div style="display:flex;gap:6px">
+      <button class="periodo-btn active" id="hf-all" onclick="setFiltroHist('all')">Tudo</button>
+      <button class="periodo-btn" id="hf-p" onclick="setFiltroHist('p')">🥚 Pequeno</button>
+      <button class="periodo-btn" id="hf-g" onclick="setFiltroHist('g')">🪺 Grande</button>
+    </div>
+  </div>
+  <div id="hist-list" style="padding:0"></div>
+</div>
+
+<script>
+// ─── Firebase init (compat mode — sem ES modules) ───
+firebase.initializeApp({ databaseURL: "https://agrivale-2026-default-rtdb.firebaseio.com" });
+var db = firebase.database();
+
+// ─── Estado global ───
+var config = { preco_p:15, preco_g:25, meta_diaria_p:20, meta_diaria_g:10, meta_mensal_p:500, meta_mensal_g:250 };
+var vendas = {};
+var logPrecos = [];
+var telaAtiva = 'dashboard';
+var periodo = 7, tipoGraf = 'p', ptipoEdit = 'p', filtroHist = 'all';
+var chartPizza=null, chartReceita=null, chartQtd=null, chartComp=null;
+
+// ─── Utilitários ───
+function fmt(n){ return 'MT '+(Number(n)||0).toFixed(2); }
+function hoje(){ return new Date().toLocaleDateString('pt-BR'); }
+function mes(){ return new Date().toLocaleDateString('pt-BR',{month:'2-digit',year:'numeric'}); }
+function cor(p){ return p>=100?'#22c55e':p>=60?'#f59e0b':'#ef4444'; }
+function showMsg(txt,tipo){
+  var el=document.getElementById('msg');
+  el.textContent=txt; el.className='msg '+tipo; el.style.display='block';
+  setTimeout(function(){ el.style.display='none'; },3000);
+}
+
+// ─── Firebase listeners ───
+db.ref('config').on('value', function(snap){
+  if(snap.exists()) config = Object.assign({},config,snap.val());
+  document.getElementById('sync-dot').textContent='🟢';
+  renderAtiva();
+});
+
+db.ref('vendas').on('value', function(snap){
+  vendas = snap.exists() ? snap.val() : {};
+  renderAtiva();
+});
+
+db.ref('log_precos').on('value', function(snap){
+  if(snap.exists()){
+    logPrecos = Object.values(snap.val()).sort(function(a,b){ return b.timestamp-a.timestamp; });
+  } else { logPrecos = []; }
+  if(telaAtiva==='precos') renderPrecosLista();
+});
+
+// ─── Navegação ───
+function mudarTela(t){
+  telaAtiva = t;
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(tb){ tb.classList.remove('active'); });
+  document.getElementById('screen-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  renderAtiva();
+}
+
+function renderAtiva(){
+  if(telaAtiva==='dashboard') renderDashboard();
+  else if(telaAtiva==='evolucao') renderEvolucao();
+  else if(telaAtiva==='precos') renderPrecos();
+  else if(telaAtiva==='metas') renderMetas();
+  else if(telaAtiva==='historico') renderHistorico();
+}
+
+// ─── DASHBOARD ───
+function renderDashboard(){
+  var vs = Object.values(vendas);
+  var vh = vs.filter(function(v){ return v.data===hoje(); });
+  var vm = vs.filter(function(v){ return v.data && v.data.slice(-7)===mes(); });
+  var vhp=vh.filter(function(v){return v.tipo==='pequeno';}), vhg=vh.filter(function(v){return v.tipo==='grande';});
+  var vmp=vm.filter(function(v){return v.tipo==='pequeno';}), vmg=vm.filter(function(v){return v.tipo==='grande';});
+  var qhp=vhp.reduce(function(s,v){return s+v.qtd;},0), qhg=vhg.reduce(function(s,v){return s+v.qtd;},0);
+  var qmp=vmp.reduce(function(s,v){return s+v.qtd;},0), qmg=vmg.reduce(function(s,v){return s+v.qtd;},0);
+  var rh=vh.reduce(function(s,v){return s+v.valor;},0), rm=vm.reduce(function(s,v){return s+v.valor;},0);
+  var pdp=Math.min((qhp/(config.meta_diaria_p||1))*100,100);
+  var pmp=Math.min((qmp/(config.meta_mensal_p||1))*100,100);
+  var pdg=Math.min((qhg/(config.meta_diaria_g||1))*100,100);
+  var pmg=Math.min((qmg/(config.meta_mensal_g||1))*100,100);
+  var okr=Math.round((pdp+pmp+pdg+pmg)/4);
+
+  document.getElementById('okr-score').textContent=okr+'%';
+  document.getElementById('okr-status').textContent=okr>=80?'🟢 Ótimo':okr>=50?'🟡 Em progresso':'🔴 Atenção';
+  document.getElementById('okr-sub').textContent=okr>=80?'Parabéns! Continue assim.':okr>=50?'Bom ritmo, há margem para crescer.':'Revise a estratégia!';
+  document.getElementById('kpi-preco-p').textContent=(Number(config.preco_p)||0).toFixed(2);
+  document.getElementById('kpi-preco-g').textContent=(Number(config.preco_g)||0).toFixed(2);
+  setKPI('p',qhp,config.meta_diaria_p,qmp,config.meta_mensal_p,pdp,pmp);
+  setKPI('g',qhg,config.meta_diaria_g,qmg,config.meta_mensal_g,pdg,pmg);
+  document.getElementById('s-rec-hoje').textContent=fmt(rh);
+  document.getElementById('s-rec-mes').textContent=fmt(rm);
+  document.getElementById('s-vendas-hoje').textContent=vh.length+' vendas';
+  document.getElementById('s-ticket').textContent=vh.length>0?fmt(rh/vh.length):'—';
+
+  if(chartPizza){ chartPizza.destroy(); chartPizza=null; }
+  var ctx=document.getElementById('chart-pizza').getContext('2d');
+  chartPizza=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:['🥚 Pequeno','🪺 Grande'],datasets:[{data:[qhp||0,qhg||0],backgroundColor:['#f59e0b','#16a34a'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12}}}}}
+  });
+}
+
+function setKPI(t,qhd,md,qhm,mm,pd,pm){
+  document.getElementById('kpi-'+t+'-hoje').textContent=qhd;
+  document.getElementById('kpi-'+t+'-meta-d').textContent=md||0;
+  document.getElementById('kpi-'+t+'-mes').textContent=qhm;
+  document.getElementById('kpi-'+t+'-meta-m').textContent=mm||0;
+  document.getElementById('kpi-'+t+'-perc-d').textContent=Math.round(pd)+'%';
+  document.getElementById('kpi-'+t+'-perc-m').textContent=Math.round(pm)+'%';
+  document.getElementById('kpi-'+t+'-perc-d').style.color=cor(pd);
+  document.getElementById('kpi-'+t+'-perc-m').style.color=cor(pm);
+  var bd=document.getElementById('bar-'+t+'-d'); bd.style.width=pd+'%'; bd.style.background=cor(pd);
+  var bm=document.getElementById('bar-'+t+'-m'); bm.style.width=pm+'%'; bm.style.background=cor(pm);
+}
+
+// ─── EVOLUÇÃO ───
+function setPeriodo(p){
+  periodo=p;
+  ['7','15','30'].forEach(function(x){ document.getElementById('per-'+x).classList.remove('active'); });
+  document.getElementById('per-'+p).classList.add('active');
+  renderEvolucao();
+}
+function setTipoGraf(t){
+  tipoGraf=t;
+  ['p','g','all'].forEach(function(x){ document.getElementById('ttab-'+x).className='tipo-tab'; });
+  document.getElementById('ttab-'+t).className='tipo-tab '+(t==='p'?'ap':t==='g'?'ag':'aa');
+  renderEvolucao();
+}
+function getDatas(n){
+  var d=[];
+  for(var i=n-1;i>=0;i--){ var dt=new Date(); dt.setDate(dt.getDate()-i); d.push(dt.toLocaleDateString('pt-BR')); }
+  return d;
+}
+function renderEvolucao(){
+  var datas=getDatas(periodo), labels=datas.map(function(d){return d.slice(0,5);});
+  var vs=Object.values(vendas);
+  var recP=datas.map(function(d){return vs.filter(function(v){return v.data===d&&v.tipo==='pequeno';}).reduce(function(s,v){return s+v.valor;},0);});
+  var recG=datas.map(function(d){return vs.filter(function(v){return v.data===d&&v.tipo==='grande';}).reduce(function(s,v){return s+v.valor;},0);});
+  var recT=datas.map(function(_,i){return recP[i]+recG[i];});
+  var qtdP=datas.map(function(d){return vs.filter(function(v){return v.data===d&&v.tipo==='pequeno';}).reduce(function(s,v){return s+v.qtd;},0);});
+  var qtdG=datas.map(function(d){return vs.filter(function(v){return v.data===d&&v.tipo==='grande';}).reduce(function(s,v){return s+v.qtd;},0);});
+
+  if(chartReceita){chartReceita.destroy();chartReceita=null;}
+  chartReceita=new Chart(document.getElementById('chart-receita').getContext('2d'),{
+    type:'line',data:{labels:labels,datasets:[{label:'Receita',data:recT,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.4,pointRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+  });
+
+  if(chartQtd){chartQtd.destroy();chartQtd=null;}
+  var ds=tipoGraf==='all'
+    ?[{label:'🥚',data:qtdP,backgroundColor:'#f59e0b'},{label:'🪺',data:qtdG,backgroundColor:'#16a34a'}]
+    :tipoGraf==='p'?[{label:'🥚 Pequeno',data:qtdP,backgroundColor:'#f59e0b'}]:[{label:'🪺 Grande',data:qtdG,backgroundColor:'#16a34a'}];
+  chartQtd=new Chart(document.getElementById('chart-qtd').getContext('2d'),{
+    type:'bar',data:{labels:labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
+  });
+
+  var totP=qtdP.reduce(function(s,v){return s+v;},0), totG=qtdG.reduce(function(s,v){return s+v;},0);
+  if(chartComp){chartComp.destroy();chartComp=null;}
+  chartComp=new Chart(document.getElementById('chart-comp').getContext('2d'),{
+    type:'bar',data:{labels:['🥚 Pequeno','🪺 Grande'],datasets:[{data:[totP,totG],backgroundColor:['#f59e0b','#16a34a'],borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+  });
+}
+
+// ─── PREÇOS ───
+function setPtipoEdit(t){
+  ptipoEdit=t;
+  document.getElementById('ptab-p').className='tipo-tab'+(t==='p'?' ap':'');
+  document.getElementById('ptab-g').className='tipo-tab'+(t==='g'?' ag':'');
+  document.getElementById('input-novo-preco').value='';
+  document.getElementById('prev-preco').style.display='none';
+}
+function atualizarPrevPreco(){
+  var novo=parseFloat(document.getElementById('input-novo-preco').value);
+  var atual=Number(ptipoEdit==='p'?config.preco_p:config.preco_g)||0;
+  var prev=document.getElementById('prev-preco');
+  if(novo>0 && novo!==atual){
+    var diff=Math.abs(((novo-atual)/(atual||1))*100).toFixed(1);
+    var c=novo>atual?'#059669':'#ef4444', s=novo>atual?'▲':'▼';
+    prev.style.display='flex';
+    prev.innerHTML='<span class="tag-'+(ptipoEdit==='p'?'yellow':'red')+'">'+fmt(atual)+'</span>'
+      +'<span style="color:#aaa;font-size:18px">→</span>'
+      +'<span class="tag-green">'+fmt(novo)+'</span>'
+      +'<span style="font-size:13px;font-weight:700;color:'+c+'">'+s+' '+diff+'%</span>';
+  } else { prev.style.display='none'; }
+}
+function salvarPreco(){
+  var novo=parseFloat(document.getElementById('input-novo-preco').value);
+  if(!novo||novo<=0){ showMsg('❌ Informe um valor válido!','erro'); return; }
+  var atual=Number(ptipoEdit==='p'?config.preco_p:config.preco_g)||0;
+  if(novo===atual){ showMsg('⚠️ Preço igual ao actual!','erro'); return; }
+  var agora=new Date();
+  var dh=agora.toLocaleDateString('pt-BR')+' às '+agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var motivo=document.getElementById('input-motivo').value.trim()||'Sem motivo informado';
+  var novoConfig=Object.assign({},config);
+  if(ptipoEdit==='p') novoConfig.preco_p=novo; else novoConfig.preco_g=novo;
+  db.ref('config').set(novoConfig);
+  db.ref('log_precos').push({dataHora:dh,de:atual,para:novo,motivo:motivo,tipo:ptipoEdit,timestamp:Date.now()});
+  document.getElementById('input-novo-preco').value='';
+  document.getElementById('input-motivo').value='';
+  document.getElementById('prev-preco').style.display='none';
+  showMsg('✅ Preço actualizado para '+fmt(novo)+'!','ok');
+}
+function renderPrecos(){
+  document.getElementById('preco-p-big').textContent='MT '+(Number(config.preco_p)||0).toFixed(2);
+  document.getElementById('preco-g-big').textContent='MT '+(Number(config.preco_g)||0).toFixed(2);
+  renderPrecosLista();
+}
+function renderPrecosLista(){
+  var el=document.getElementById('log-precos-list');
+  if(!logPrecos||logPrecos.length===0){ el.innerHTML='<div class="empty">Nenhuma alteração ainda.</div>'; return; }
+  el.innerHTML=logPrecos.map(function(log,i){
+    var de=Number(log.de)||0, para=Number(log.para)||0;
+    var diff=Math.abs(((para-de)/(de||1))*100).toFixed(1);
+    var c=para>de?'#059669':'#ef4444', s=para>de?'▲':'▼';
+    return '<div class="price-log-item '+(log.tipo==='p'?'p':'')+'">'
+      +'<div class="pli-time">🕐 '+log.dataHora+(i===0?' <b style="color:#166534">[Mais recente]</b>':'')+' '
+      +'<span style="background:'+(log.tipo==='p'?'#fef3c7':'#dcfce7')+';color:'+(log.tipo==='p'?'#92400e':'#166534')+';border-radius:4px;padding:1px 5px;font-size:10px;font-weight:800">'+(log.tipo==='p'?'PEQUENO':'GRANDE')+'</span></div>'
+      +'<div class="pli-tags"><span class="tag-'+(log.tipo==='p'?'yellow':'red')+'">'+fmt(de)+'</span>'
+      +'<span style="color:#aaa;font-size:18px">→</span><span class="tag-green">'+fmt(para)+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:'+c+'">'+s+' '+diff+'%</span></div>'
+      +'<div class="pli-motivo">📝 '+log.motivo+'</div></div>';
+  }).join('');
+}
+
+// ─── METAS ───
+function renderMetas(){
+  document.getElementById('m-pd').value=config.meta_diaria_p||'';
+  document.getElementById('m-pm').value=config.meta_mensal_p||'';
+  document.getElementById('m-gd').value=config.meta_diaria_g||'';
+  document.getElementById('m-gm').value=config.meta_mensal_g||'';
+  document.getElementById('m-view-pd').textContent=(config.meta_diaria_p||0)+' favos';
+  document.getElementById('m-view-pm').textContent=(config.meta_mensal_p||0)+' favos';
+  document.getElementById('m-view-gd').textContent=(config.meta_diaria_g||0)+' favos';
+  document.getElementById('m-view-gm').textContent=(config.meta_mensal_g||0)+' favos';
+}
+function salvarMetas(){
+  var novoConfig=Object.assign({},config,{
+    meta_diaria_p: parseInt(document.getElementById('m-pd').value)||config.meta_diaria_p,
+    meta_mensal_p: parseInt(document.getElementById('m-pm').value)||config.meta_mensal_p,
+    meta_diaria_g: parseInt(document.getElementById('m-gd').value)||config.meta_diaria_g,
+    meta_mensal_g: parseInt(document.getElementById('m-gm').value)||config.meta_mensal_g,
+  });
+  db.ref('config').set(novoConfig);
+  showMsg('✅ Metas guardadas e sincronizadas!','ok');
+}
+
+// ─── HISTÓRICO ───
+function setFiltroHist(f){
+  filtroHist=f;
+  ['all','p','g'].forEach(function(x){ document.getElementById('hf-'+x).classList.remove('active'); });
+  document.getElementById('hf-'+f).classList.add('active');
+  renderHistorico();
+}
+function renderHistorico(){
+  var itens=Object.values(vendas).sort(function(a,b){ return b.timestamp-a.timestamp; });
+  if(filtroHist==='p') itens=itens.filter(function(v){return v.tipo==='pequeno';});
+  if(filtroHist==='g') itens=itens.filter(function(v){return v.tipo==='grande';});
+  var el=document.getElementById('hist-list');
+  if(itens.length===0){ el.innerHTML='<div class="empty" style="padding:30px">Nenhum registo.</div>'; return; }
+  el.innerHTML=itens.map(function(v){
+    return '<div class="hist-item '+(v.tipo==='pequeno'?'p':'g')+'" style="margin:0 0 8px">'
+      +'<div>'
+        +'<div style="font-weight:700;font-size:13px;color:#1e3a5f">'+v.cliente+'</div>'
+        +'<div style="font-size:11px;color:#888;margin-top:2px">'+v.data+' às '+v.hora+'</div>'
+        +'<div style="font-size:10px;color:#aaa">'+fmt(v.preco_unitario)+'/favo · '+(v.tipo==='pequeno'?'🥚 Pequeno':'🪺 Grande')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+        +'<div style="font-weight:800;font-size:14px;color:'+(v.tipo==='pequeno'?'#b45309':'#166534')+'">'+v.qtd+' favo(s)</div>'
+        +'<div style="font-size:12px;font-weight:600;color:#166534">'+fmt(v.valor)+'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#166534"/>
+<title>AGRIVALE - Operador</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#f0fdf4;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:30px;}
+button,input{font-family:inherit;}
+.header{background:linear-gradient(135deg,#14532d,#166534,#15803d);padding:16px 20px;color:#fff;display:flex;align-items:center;gap:12px;}
+.header-logo{width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.header-text h1{font-size:17px;font-weight:800;}
+.header-text p{font-size:11px;opacity:.8;margin-top:1px;}
+.header-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.hora-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;}
+.msg{margin:12px 16px 0;padding:12px 16px;border-radius:10px;font-weight:600;font-size:14px;text-align:center;display:none;}
+.msg.ok{background:#dcfce7;color:#166534;}
+.msg.erro{background:#fee2e2;color:#991b1b;}
+.loading{text-align:center;padding:40px;color:#166534;font-size:14px;font-weight:600;}
+.section{padding:14px 16px 0;}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:12px;}
+.tipo-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.tipo-btn{padding:14px 8px;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.tipo-btn .icon{font-size:28px;}
+.tipo-btn .nome{font-size:13px;font-weight:800;}
+.tipo-btn .preco{font-size:12px;font-weight:600;}
+.tipo-btn.sel-p{border-color:#f59e0b;background:#fffbeb;color:#b45309;}
+.tipo-btn.sel-g{border-color:#15803d;background:#f0fdf4;color:#166534;}
+.qtd-label{font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;}
+.quick-btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.qbtn{padding:12px 0;border-radius:10px;border:2px solid #d1fae5;background:#f0fdf4;color:#166534;font-weight:800;font-size:16px;}
+.input-row{display:flex;gap:8px;margin-bottom:14px;}
+.input-row input{flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:18px;text-align:center;font-weight:700;}
+.btn-clear{padding:12px 14px;border-radius:10px;border:none;background:#f3f4f6;color:#666;font-weight:700;}
+.preview{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:10px;padding:12px;margin-bottom:14px;text-align:center;font-size:15px;font-weight:700;color:#166534;display:none;}
+.preview span{font-size:22px;font-weight:900;display:block;margin-top:2px;}
+.btn-confirm{width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;font-size:18px;font-weight:900;}
+.resumo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.res-box{border-radius:12px;padding:14px;text-align:center;}
+.res-box .big{font-size:24px;font-weight:900;line-height:1;}
+.res-box .sub{font-size:11px;margin-top:3px;font-weight:600;}
+.meta-row{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#555;margin-bottom:5px;}
+.bar{background:#e5e7eb;border-radius:99px;height:10px;margin-bottom:10px;}
+.bar-fill{height:10px;border-radius:99px;transition:width .5s;}
+.vendas-list{max-height:260px;overflow-y:auto;}
+.venda-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;}
+.venda-item.p{background:#fffbeb;border-left:3px solid #f59e0b;}
+.venda-item.g{background:#f0fdf4;border-left:3px solid #16a34a;}
+.tag-tipo{font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;margin-right:4px;}
+.tag-p{background:#fef3c7;color:#92400e;}
+.tag-g{background:#dcfce7;color:#166534;}
+.section-title{font-size:15px;font-weight:800;color:#166534;margin-bottom:10px;}
+.empty-msg{text-align:center;color:#aaa;padding:20px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🌾</div>
+  <div class="header-text">
+    <h1>AGRIVALE MOÇAMBIQUE</h1>
+    <p>Painel do Operador</p>
+  </div>
+  <div class="header-right">
+    <div class="hora-badge" id="hora-badge">--:--</div>
+    <div style="font-size:11px;opacity:.8" id="sync-status">🔄 A ligar...</div>
+  </div>
+</div>
+
+<div class="msg" id="msg"></div>
+<div class="loading" id="loading">🔄 A carregar dados...</div>
+
+<div class="section" id="main-content" style="display:none">
+  <div class="card">
+    <div class="section-title">📦 Registar Venda</div>
+    <div class="tipo-selector">
+      <button class="tipo-btn" id="btn-pequeno" onclick="selecionarTipo('pequeno')">
+        <span class="icon">🥚</span>
+        <span class="nome">Pequeno</span>
+        <span class="preco" id="preco-p-label">MT 0.00</span>
+      </button>
+      <button class="tipo-btn" id="btn-grande" onclick="selecionarTipo('grande')">
+        <span class="icon">🪺</span>
+        <span class="nome">Grande</span>
+        <span class="preco" id="preco-g-label">MT 0.00</span>
+      </button>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="qtd-label">👤 Cliente (opcional)</div>
+      <input type="text" id="input-cliente" placeholder="Nome do cliente..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:14px;"/>
+    </div>
+    <div class="qtd-label">📦 Quantidade de favos</div>
+    <div class="quick-btns">
+      <button class="qbtn" onclick="addQtd(1)">+1</button>
+      <button class="qbtn" onclick="addQtd(2)">+2</button>
+      <button class="qbtn" onclick="addQtd(5)">+5</button>
+      <button class="qbtn" onclick="addQtd(10)">+10</button>
+    </div>
+    <div class="input-row">
+      <input type="number" id="input-qtd" placeholder="Qtd" min="1" oninput="atualizarPreview()"/>
+      <button class="btn-clear" onclick="limpar()">✕</button>
+    </div>
+    <div class="preview" id="preview">
+      Valor total
+      <span id="preview-val">MT 0.00</span>
+    </div>
+    <button class="btn-confirm" onclick="registrarVenda()">✅ CONFIRMAR VENDA</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📅 Resumo de Hoje — <span id="data-hoje"></span></div>
+    <div class="resumo">
+      <div class="res-box" style="background:#fef3c7">
+        <div class="big" style="color:#b45309" id="r-total-qtd">0</div>
+        <div class="sub" style="color:#92400e">favos vendidos</div>
+      </div>
+      <div class="res-box" style="background:#dcfce7">
+        <div class="big" style="color:#166534;font-size:18px" id="r-total-val">MT 0.00</div>
+        <div class="sub" style="color:#166534">receita hoje</div>
+      </div>
+      <div class="res-box" style="background:#fef9c3">
+        <div class="big" style="color:#a16207;font-size:18px" id="r-peq-qtd">0</div>
+        <div class="sub" style="color:#a16207">🥚 pequenos</div>
+      </div>
+      <div class="res-box" style="background:#bbf7d0">
+        <div class="big" style="color:#15803d;font-size:18px" id="r-gra-qtd">0</div>
+        <div class="sub" style="color:#15803d">🪺 grandes</div>
+      </div>
+    </div>
+    <div class="meta-row">
+      <span>🥚 Meta pequeno: <b id="meta-p-label">0/0</b></span>
+      <span id="perc-p-label" style="font-weight:800">0%</span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="bar-p" style="width:0%"></div></div>
+    <div class="meta-row">
+      <span>🪺 Meta grande: <b id="meta-g-label">0/0</b></span>
+      <span id="perc-g-label" style="font-weight:800">0%</span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="bar-g" style="width:0%"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🧾 Vendas de Hoje</div>
+    <div class="vendas-list" id="vendas-list">
+      <div class="empty-msg">Nenhuma venda registada hoje.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({ databaseURL: "https://agrivale-2026-default-rtdb.firebaseio.com" });
+var db = firebase.database();
+
+var config = { preco_p:15, preco_g:25, meta_diaria_p:20, meta_diaria_g:10, meta_mensal_p:500, meta_mensal_g:250 };
+var vendas = {};
+var tipoSelecionado = null;
+
+function fmt(n){ return 'MT '+(Number(n)||0).toFixed(2); }
+function hoje(){ return new Date().toLocaleDateString('pt-BR'); }
+function cor(p){ return p>=100?'#22c55e':p>=60?'#f59e0b':'#ef4444'; }
+
+function showMsg(txt,tipo){
+  var el=document.getElementById('msg');
+  el.textContent=txt; el.className='msg '+tipo; el.style.display='block';
+  setTimeout(function(){ el.style.display='none'; },3000);
+}
+
+function atualizarHora(){
+  document.getElementById('hora-badge').textContent =
+    new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+setInterval(atualizarHora,1000); atualizarHora();
+
+db.ref('config').on('value', function(snap){
+  if(snap.exists()) config = Object.assign({},config,snap.val());
+  document.getElementById('preco-p-label').textContent = fmt(config.preco_p);
+  document.getElementById('preco-g-label').textContent = fmt(config.preco_g);
+  atualizarPreview();
+  renderResumo();
+});
+
+db.ref('vendas').on('value', function(snap){
+  vendas = snap.exists() ? snap.val() : {};
+  document.getElementById('loading').style.display='none';
+  document.getElementById('main-content').style.display='block';
+  document.getElementById('sync-status').textContent='🟢 Online';
+  renderResumo();
+});
+
+function selecionarTipo(tipo){
+  tipoSelecionado=tipo;
+  document.getElementById('btn-pequeno').className='tipo-btn'+(tipo==='pequeno'?' sel-p':'');
+  document.getElementById('btn-grande').className='tipo-btn'+(tipo==='grande'?' sel-g':'');
+  atualizarPreview();
+}
+function addQtd(n){
+  var inp=document.getElementById('input-qtd');
+  inp.value=(parseInt(inp.value)||0)+n;
+  atualizarPreview();
+}
+function limpar(){
+  document.getElementById('input-qtd').value='';
+  document.getElementById('input-cliente').value='';
+  document.getElementById('preview').style.display='none';
+  tipoSelecionado=null;
+  document.getElementById('btn-pequeno').className='tipo-btn';
+  document.getElementById('btn-grande').className='tipo-btn';
+}
+function atualizarPreview(){
+  var q=parseInt(document.getElementById('input-qtd').value)||0;
+  var prev=document.getElementById('preview');
+  if(q>0&&tipoSelecionado){
+    var preco=Number(tipoSelecionado==='pequeno'?config.preco_p:config.preco_g)||0;
+    prev.style.display='block';
+    document.getElementById('preview-val').textContent=fmt(q*preco)+' ('+q+' × '+fmt(preco)+')';
+  } else { prev.style.display='none'; }
+}
+function registrarVenda(){
+  if(!tipoSelecionado){ showMsg('❌ Selecione o tipo de favo!','erro'); return; }
+  var q=parseInt(document.getElementById('input-qtd').value)||0;
+  if(q<=0){ showMsg('❌ Informe a quantidade!','erro'); return; }
+  var preco=Number(tipoSelecionado==='pequeno'?config.preco_p:config.preco_g)||0;
+  var agora=new Date();
+  db.ref('vendas').push({
+    data:hoje(), tipo:tipoSelecionado, qtd:q,
+    cliente:document.getElementById('input-cliente').value.trim()||'Cliente não informado',
+    preco_unitario:preco, valor:q*preco,
+    hora:agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    timestamp:Date.now()
+  });
+  limpar();
+  showMsg('✅ Venda registada com sucesso!','ok');
+}
+function renderResumo(){
+  document.getElementById('data-hoje').textContent=hoje();
+  var vh=Object.values(vendas).filter(function(v){return v.data===hoje();});
+  var vhp=vh.filter(function(v){return v.tipo==='pequeno';}), vhg=vh.filter(function(v){return v.tipo==='grande';});
+  var qp=vhp.reduce(function(s,v){return s+v.qtd;},0), qg=vhg.reduce(function(s,v){return s+v.qtd;},0);
+  var rp=vhp.reduce(function(s,v){return s+v.valor;},0), rg=vhg.reduce(function(s,v){return s+v.valor;},0);
+  var pp=Math.min((qp/(config.meta_diaria_p||1))*100,100);
+  var pg=Math.min((qg/(config.meta_diaria_g||1))*100,100);
+  document.getElementById('r-total-qtd').textContent=qp+qg;
+  document.getElementById('r-total-val').textContent=fmt(rp+rg);
+  document.getElementById('r-peq-qtd').textContent=qp;
+  document.getElementById('r-gra-qtd').textContent=qg;
+  document.getElementById('meta-p-label').textContent=qp+'/'+(config.meta_diaria_p||0);
+  document.getElementById('meta-g-label').textContent=qg+'/'+(config.meta_diaria_g||0);
+  document.getElementById('perc-p-label').textContent=Math.round(pp)+'%';
+  document.getElementById('perc-g-label').textContent=Math.round(pg)+'%';
+  document.getElementById('perc-p-label').style.color=cor(pp);
+  document.getElementById('perc-g-label').style.color=cor(pg);
+  var bp=document.getElementById('bar-p'); bp.style.width=pp+'%'; bp.style.background=cor(pp);
+  var bg2=document.getElementById('bar-g'); bg2.style.width=pg+'%'; bg2.style.background=cor(pg);
+  var sorted=vh.slice().sort(function(a,b){return b.timestamp-a.timestamp;});
+  var lista=document.getElementById('vendas-list');
+  if(sorted.length===0){ lista.innerHTML='<div class="empty-msg">Nenhuma venda registada hoje.</div>'; return; }
+  lista.innerHTML=sorted.map(function(v){
+    return '<div class="venda-item '+(v.tipo==='pequeno'?'p':'g')+'">'
+      +'<div>'
+        +'<div style="font-weight:700;font-size:13px;color:#1e3a5f"><span class="tag-tipo '+(v.tipo==='pequeno'?'tag-p':'tag-g')+'">'+(v.tipo==='pequeno'?'PEQUENO':'GRANDE')+'</span>'+v.cliente+'</div>'
+        +'<div style="font-size:11px;color:#888;margin-top:1px">'+v.hora+' · '+fmt(v.preco_unitario)+'/favo</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+        +'<div style="font-weight:800;font-size:14px;color:'+(v.tipo==='pequeno'?'#b45309':'#166534')+'">'+v.qtd+' favo(s)</div>'
+        +'<div style="font-size:12px;font-weight:600;color:#166534">'+fmt(v.valor)+'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+</script>
+</body>
+</html>
