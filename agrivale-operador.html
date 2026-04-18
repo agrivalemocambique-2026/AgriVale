@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#166534"/>
+<title>AGRIVALE - Operador</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#f0fdf4;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:30px;}
+button,input,select{font-family:inherit;}
+
+/* Header */
+.header{background:linear-gradient(135deg,#14532d,#166534,#15803d);padding:14px 16px;color:#fff;display:flex;align-items:center;gap:10px;}
+.header-logo{width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:3px;overflow:hidden;}
+.hlogo-img{width:100%;height:100%;object-fit:contain;}
+.header-text h1{font-size:15px;font-weight:800;}
+.header-text p{font-size:10px;opacity:.8;margin-top:1px;}
+.header-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.hora-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;}
+.sync-badge{font-size:9px;font-weight:700;border-radius:20px;padding:2px 7px;}
+.sync-badge.online{background:rgba(34,197,94,.3);color:#dcfce7;}
+.sync-badge.offline{background:rgba(239,68,68,.3);color:#fee2e2;}
+
+/* Banners */
+.offline-banner{background:#f59e0b;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-align:center;display:none;}
+.pending-banner{background:#3b82f6;color:#fff;padding:7px 14px;font-size:11px;font-weight:600;text-align:center;display:none;}
+.msg{margin:10px 14px 0;padding:10px 14px;border-radius:10px;font-weight:600;font-size:13px;text-align:center;display:none;}
+.msg.ok{background:#dcfce7;color:#166534;}
+.msg.erro{background:#fee2e2;color:#991b1b;}
+.msg.aviso{background:#fef3c7;color:#92400e;}
+
+/* Ecrã de selecção de ponto */
+#tela-ponto{display:flex;flex-direction:column;align-items:center;padding:30px 20px;}
+#tela-ponto h2{font-size:20px;font-weight:900;color:#14532d;margin-bottom:6px;text-align:center;}
+#tela-ponto p{font-size:13px;color:#6b7280;margin-bottom:24px;text-align:center;}
+.ponto-btn{width:100%;padding:16px;border-radius:12px;border:2px solid #d1fae5;background:#fff;font-size:15px;font-weight:700;color:#14532d;margin-bottom:10px;text-align:left;display:flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,.05);cursor:pointer;}
+.ponto-btn:active{background:#f0fdf4;}
+
+/* Tabs */
+.op-tabs{display:flex;background:#fff;border-bottom:2px solid #d1fae5;position:sticky;top:0;z-index:10;}
+.op-tab{flex:1;padding:9px 2px;border:none;background:transparent;border-bottom:3px solid transparent;font-size:10px;cursor:pointer;color:#666;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.op-tab span{font-size:14px;}
+.op-tab.active{background:#f0fdf4;border-bottom:3px solid #16a34a;font-weight:700;color:#166534;}
+.op-screen{display:none;}
+.op-screen.active{display:block;}
+
+/* Barra ponto */
+.ponto-bar{background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:10px;padding:10px 14px;margin:12px 14px;display:flex;justify-content:space-between;align-items:center;color:#fff;}
+.ponto-bar .nome{font-size:14px;font-weight:800;}
+.ponto-bar .sub{font-size:10px;opacity:.8;}
+.btn-trocar{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:11px;font-weight:700;border-radius:8px;padding:5px 10px;cursor:pointer;}
+
+/* Cards */
+.section{padding:0 14px;}
+.card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:10px;}
+.section-title{font-size:14px;font-weight:800;color:#166534;margin-bottom:10px;}
+
+/* Stock bar */
+.stock-bar{display:flex;gap:8px;margin:0 14px 10px;}
+.stock-item{flex:1;border-radius:10px;padding:10px;text-align:center;}
+.stock-item.ok{background:#f0fdf4;border:1px solid #86efac;}
+.stock-item.low{background:#fef3c7;border:1px solid #fcd34d;}
+.stock-item.zero{background:#fee2e2;border:1px solid #fca5a5;}
+.stock-item .sv{font-size:20px;font-weight:900;}
+.stock-item .sl{font-size:10px;font-weight:600;margin-top:2px;}
+
+/* Selector produto */
+.selector-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.sel-btn{padding:11px 8px;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.sel-btn .icon{font-size:22px;}
+.sel-btn .nome{font-size:11px;font-weight:800;color:#374151;}
+.sel-btn .preco{font-size:10px;font-weight:600;color:#888;}
+.sel-btn.active-pp{border-color:#f59e0b;background:#fffbeb;}
+.sel-btn.active-gp{border-color:#16a34a;background:#f0fdf4;}
+.sel-btn.active-pu{border-color:#f97316;background:#fff7ed;}
+.sel-btn.active-gu{border-color:#0891b2;background:#ecfeff;}
+.sel-btn.sem-stock{opacity:.4;pointer-events:none;}
+
+.step-label{font-size:12px;font-weight:700;color:#374151;margin-bottom:7px;}
+
+/* Cliente autocomplete */
+.cliente-wrap{position:relative;margin-bottom:12px;}
+.cliente-wrap input{width:100%;padding:9px 11px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:13px;}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1fae5;border-radius:0 0 10px 10px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto;display:none;}
+.autocomplete-item{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f3f4f6;}
+.autocomplete-item .ac-nome{font-weight:700;color:#1e3a5f;}
+.autocomplete-item .ac-info{font-size:10px;color:#888;margin-top:1px;}
+
+/* Quantidade */
+.quick-btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:10px;}
+.qbtn{padding:10px 0;border-radius:10px;border:2px solid #d1fae5;background:#f0fdf4;color:#166534;font-weight:800;font-size:15px;}
+.input-row{display:flex;gap:8px;margin-bottom:10px;}
+.input-row input{flex:1;padding:10px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:18px;text-align:center;font-weight:700;}
+.btn-clear{padding:10px 12px;border-radius:10px;border:none;background:#f3f4f6;color:#666;font-weight:700;}
+.preview-box{border-radius:10px;padding:11px;margin-bottom:12px;text-align:center;font-size:13px;font-weight:700;display:none;}
+
+/* Pagamento */
+.pag-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;}
+.pag-btn{padding:9px 4px;border-radius:10px;border:2px solid #e5e7eb;background:#f9fafb;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:10px;font-weight:700;color:#555;}
+.pag-btn .pag-icon{font-size:18px;}
+.pag-btn.active{border-color:#16a34a;background:#f0fdf4;color:#166534;}
+.pag-btn.active-fiado{border-color:#f59e0b;background:#fef3c7;color:#92400e;}
+.fiado-warning{display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px;font-size:11px;color:#92400e;margin-bottom:10px;}
+
+.btn-confirm{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;font-size:16px;font-weight:900;}
+
+/* Resumo / Metas */
+.resumo4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.res-box{border-radius:10px;padding:11px;text-align:center;}
+.res-box .big{font-size:20px;font-weight:900;line-height:1;}
+.res-box .sub{font-size:9px;margin-top:2px;font-weight:600;}
+.meta-row{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#555;margin-bottom:4px;}
+.bar{background:#e5e7eb;border-radius:99px;height:8px;margin-bottom:8px;}
+.bar-fill{height:8px;border-radius:99px;transition:width .5s;}
+.divider{font-size:10px;font-weight:700;color:#9ca3af;margin:6px 0 5px;padding-bottom:3px;border-bottom:1px solid #f3f4f6;}
+
+.conv-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;margin-bottom:10px;}
+.conv-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+
+/* Vendas list */
+.vendas-list{max-height:240px;overflow-y:auto;}
+.venda-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:9px;margin-bottom:5px;border-left:3px solid #e5e7eb;}
+.venda-item.pp{background:#fffbeb;border-left-color:#f59e0b;}
+.venda-item.gp{background:#f0fdf4;border-left-color:#16a34a;}
+.venda-item.pu{background:#fff7ed;border-left-color:#f97316;}
+.venda-item.gu{background:#ecfeff;border-left-color:#0891b2;}
+.venda-item.pend{opacity:.65;background:#f9fafb;border-left-color:#9ca3af;}
+.tag{font-size:9px;font-weight:800;border-radius:4px;padding:2px 5px;margin-right:3px;}
+.empty-msg{text-align:center;color:#aaa;padding:18px;font-size:12px;}
+
+/* Clientes */
+.cliente-card{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:3px solid #16a34a;cursor:pointer;}
+.cliente-card .cc-nome{font-size:14px;font-weight:800;color:#1e3a5f;}
+.cliente-card .cc-info{font-size:11px;color:#888;margin-top:2px;}
+.cliente-card .cc-stats{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.cliente-card .cc-stat{background:#f0fdf4;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;color:#166534;}
+
+.btn-novo{width:100%;padding:12px;border-radius:10px;border:1.5px dashed #16a34a;background:#f0fdf4;color:#166534;font-size:13px;font-weight:700;margin-bottom:10px;cursor:pointer;}
+
+/* Fiado */
+.fiado-card{background:#fef3c7;border-left:3px solid #f59e0b;border-radius:9px;padding:10px 12px;margin-bottom:8px;}
+.fiado-card .fc-nome{font-size:13px;font-weight:800;color:#92400e;}
+.fiado-card .fc-val{font-size:16px;font-weight:900;color:#b45309;}
+.btn-pagar{padding:6px 10px;border-radius:7px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:700;cursor:pointer;margin-top:5px;}
+
+/* Modal */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;}
+.modal-title{font-size:16px;font-weight:800;color:#14532d;margin-bottom:14px;}
+.modal-input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #e5e7eb;font-size:14px;margin-bottom:10px;}
+.modal-btns{display:flex;gap:8px;margin-top:4px;}
+.btn-modal-ok{flex:1;padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;font-size:14px;font-weight:800;}
+.btn-modal-cancel{flex:1;padding:11px;border-radius:9px;border:1.5px solid #e5e7eb;background:#f9fafb;color:#555;font-size:14px;font-weight:700;}
+
+/* Meta ponto */
+.meta-ponto-card{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border-radius:12px;padding:14px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><img src="logo.png" alt="AGRIVALE" class="hlogo-img"/></div>
+  <div class="header-text">
+    <h1>AGRIVALE MOÇAMBIQUE</h1>
+    <p id="header-sub">A carregar...</p>
+  </div>
+  <div class="header-right">
+    <div class="hora-badge" id="hora-badge">--:--</div>
+    <div class="sync-badge offline" id="sync-badge">🔴 Offline</div>
+  </div>
+</div>
+
+<div class="offline-banner" id="offline-banner">📵 Sem internet — vendas guardadas localmente</div>
+<div class="pending-banner" id="pending-banner"></div>
+<div class="msg" id="msg"></div>
+
+<!-- TABS (visíveis só no principal) -->
+<div class="op-tabs" id="op-tabs" style="display:none">
+  <button class="op-tab active" data-tela="venda" onclick="mudarTela('venda')"><span>📦</span>Venda</button>
+  <button class="op-tab" data-tela="clientes" onclick="mudarTela('clientes')"><span>👥</span>Clientes</button>
+  <button class="op-tab" data-tela="fiado" onclick="mudarTela('fiado')"><span>📝</span>Fiado</button>
+  <button class="op-tab" data-tela="hoje" onclick="mudarTela('hoje')"><span>📅</span>Hoje</button>
+</div>
+
+<!-- Modal novo cliente -->
+<div class="modal-bg" id="modal-cliente">
+  <div class="modal-box">
+    <div class="modal-title">👤 Cadastrar Cliente</div>
+    <input type="text" id="nc-nome" class="modal-input" placeholder="Nome completo *"/>
+    <input type="tel" id="nc-tel" class="modal-input" placeholder="Telefone"/>
+    <input type="text" id="nc-morada" class="modal-input" placeholder="Morada / Bairro"/>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="fecharModalCliente()">Cancelar</button>
+      <button class="btn-modal-ok" onclick="salvarNovoCliente()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TELA SELECÇÃO DE PONTO -->
+<div id="tela-ponto" style="display:none">
+  <h2>📍 Selecione o seu Ponto</h2>
+  <p>Escolha o ponto onde está a trabalhar</p>
+  <div id="lista-pontos" style="width:100%">
+    <div style="text-align:center;color:#aaa;padding:20px">A carregar...</div>
+  </div>
+</div>
+
+<!-- TELA PRINCIPAL -->
+<div id="tela-principal" style="display:none">
+
+  <!-- Barra ponto -->
+  <div class="ponto-bar">
+    <div>
+      <div class="nome" id="ponto-nome-bar">📍 —</div>
+      <div class="sub">Ponto de venda activo</div>
+    </div>
+    <button class="btn-trocar" onclick="trocarPonto()">🔄 Trocar</button>
+  </div>
+
+  <!-- Stock -->
+  <div class="stock-bar">
+    <div class="stock-item ok" id="stock-pp-box">
+      <div class="sv" id="stock-pp-val">--</div>
+      <div class="sl" style="color:#166534">🥚 Peq. stock</div>
+    </div>
+    <div class="stock-item ok" id="stock-gp-box">
+      <div class="sv" id="stock-gp-val">--</div>
+      <div class="sl" style="color:#166534">🪺 Gra. stock</div>
+    </div>
+  </div>
+
+  <!-- TELA: VENDA -->
+  <div class="op-screen active" id="screen-venda">
+    <div class="section">
+      <div class="card">
+        <div class="section-title">📦 Registar Venda</div>
+
+        <div class="step-label">1️⃣ Produto</div>
+        <div class="selector-grid">
+          <button class="sel-btn" id="btn-pp" onclick="selecionarProduto('pp')">
+            <span class="icon">🥚📦</span>
+            <span class="nome">Pequeno — Favo</span>
+            <span class="preco" id="preco-pp-lbl">MT --</span>
+          </button>
+          <button class="sel-btn" id="btn-gp" onclick="selecionarProduto('gp')">
+            <span class="icon">🪺📦</span>
+            <span class="nome">Grande — Favo</span>
+            <span class="preco" id="preco-gp-lbl">MT --</span>
+          </button>
+          <button class="sel-btn" id="btn-pu" onclick="selecionarProduto('pu')">
+            <span class="icon">🥚1️⃣</span>
+            <span class="nome">Pequeno — Unid.</span>
+            <span class="preco" id="preco-pu-lbl">MT --</span>
+          </button>
+          <button class="sel-btn" id="btn-gu" onclick="selecionarProduto('gu')">
+            <span class="icon">🪺1️⃣</span>
+            <span class="nome">Grande — Unid.</span>
+            <span class="preco" id="preco-gu-lbl">MT --</span>
+          </button>
+        </div>
+
+        <div class="step-label">2️⃣ Cliente (opcional)</div>
+        <div class="cliente-wrap">
+          <input type="text" id="input-cliente" placeholder="Nome do cliente..."/>
+          <div class="autocomplete-list" id="auto-list"></div>
+        </div>
+
+        <div class="step-label">3️⃣ Quantidade</div>
+        <div class="quick-btns">
+          <button class="qbtn" onclick="addQtd(1)">+1</button>
+          <button class="qbtn" onclick="addQtd(2)">+2</button>
+          <button class="qbtn" onclick="addQtd(5)">+5</button>
+          <button class="qbtn" onclick="addQtd(10)">+10</button>
+        </div>
+        <div class="input-row">
+          <input type="number" id="input-qtd" placeholder="Qtd" min="1" oninput="atualizarPreview()"/>
+          <button class="btn-clear" onclick="limpar()">✕</button>
+        </div>
+        <div class="preview-box" id="preview-box"></div>
+
+        <div class="step-label">4️⃣ Pagamento</div>
+        <div class="pag-grid">
+          <button class="pag-btn active" data-pag="dinheiro" onclick="selecionarPagamento('dinheiro')">
+            <span class="pag-icon">💵</span><span>Dinheiro</span>
+          </button>
+          <button class="pag-btn" data-pag="mpesa" onclick="selecionarPagamento('mpesa')">
+            <span class="pag-icon">📱</span><span>M-Pesa</span>
+          </button>
+          <button class="pag-btn" data-pag="emola" onclick="selecionarPagamento('emola')">
+            <span class="pag-icon">📲</span><span>E-mola</span>
+          </button>
+          <button class="pag-btn" data-pag="transf" onclick="selecionarPagamento('transf')">
+            <span class="pag-icon">🏦</span><span>Transf.</span>
+          </button>
+          <button class="pag-btn" data-pag="fiado" onclick="selecionarPagamento('fiado')">
+            <span class="pag-icon">📝</span><span>Fiado</span>
+          </button>
+          <button class="pag-btn" data-pag="misto" onclick="selecionarPagamento('misto')">
+            <span class="pag-icon">🔀</span><span>Misto</span>
+          </button>
+        </div>
+        <div class="fiado-warning" id="fiado-warning">
+          ⚠️ Venda a fiado — cliente obrigatório
+        </div>
+
+        <button class="btn-confirm" onclick="registrarVenda()">✅ CONFIRMAR VENDA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA: CLIENTES -->
+  <div class="op-screen" id="screen-clientes">
+    <div class="section">
+      <div class="card">
+        <div class="section-title">👥 Clientes Recorrentes</div>
+        <button class="btn-novo" onclick="abrirModalCliente()">+ Cadastrar Novo Cliente</button>
+        <input type="text" id="busca-cliente" placeholder="🔍 Buscar cliente..." oninput="renderClientes()"
+          style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:13px;margin-bottom:10px;"/>
+        <div id="clientes-list"><div class="empty-msg">Nenhum cliente cadastrado.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA: FIADO -->
+  <div class="op-screen" id="screen-fiado">
+    <div class="section">
+      <div class="card" style="background:linear-gradient(135deg,#78350f,#b45309);color:#fff;">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">📝 Fiado / Dívidas</div>
+        <div style="font-size:10px;opacity:.8;margin-bottom:10px">Vendas a crédito por pagar</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:rgba(255,255,255,.15);border-radius:9px;padding:9px;text-align:center">
+            <div style="font-size:18px;font-weight:900" id="fiado-total-val">MT 0</div>
+            <div style="font-size:9px;opacity:.8">Total em dívida</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,.15);border-radius:9px;padding:9px;text-align:center">
+            <div style="font-size:18px;font-weight:900" id="fiado-total-n">0</div>
+            <div style="font-size:9px;opacity:.8">Clientes devedores</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">💰 Dívidas em Aberto</div>
+        <div id="fiado-list"><div class="empty-msg">Nenhuma dívida.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA: HOJE -->
+  <div class="op-screen" id="screen-hoje">
+    <div class="section">
+      <!-- Conversão -->
+      <div class="card">
+        <div class="section-title">🔄 Conversão Unidades → Favos</div>
+        <div style="font-size:10px;color:#666;margin-bottom:8px">30 unidades = 1 favo (conta nas metas)</div>
+        <div class="conv-box">
+          <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:6px">🥚 Pequeno</div>
+          <div class="conv-row"><span style="color:#555">Unidades hoje:</span><span id="conv-pu-t" style="font-weight:700">0 un</span></div>
+          <div class="conv-row"><span style="color:#555">Convertido:</span><span style="font-weight:800;color:#166534" id="conv-pu-f">0 fv</span> <span style="color:#f59e0b;font-weight:700" id="conv-pu-p">+0 pend</span></div>
+        </div>
+        <div class="conv-box" style="background:#f0fdf4;border-color:#86efac;margin-top:8px">
+          <div style="font-size:11px;font-weight:800;color:#166534;margin-bottom:6px">🪺 Grande</div>
+          <div class="conv-row"><span style="color:#555">Unidades hoje:</span><span id="conv-gu-t" style="font-weight:700">0 un</span></div>
+          <div class="conv-row"><span style="color:#555">Convertido:</span><span style="font-weight:800;color:#166534" id="conv-gu-f">0 fv</span> <span style="color:#f59e0b;font-weight:700" id="conv-gu-p">+0 pend</span></div>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="card">
+        <div class="section-title">📅 Hoje — <span id="data-hoje"></span></div>
+        <div class="resumo4">
+          <div class="res-box" style="background:#fef3c7"><div class="big" style="color:#b45309" id="r-favos">0</div><div class="sub" style="color:#92400e">favos (c/ conv)</div></div>
+          <div class="res-box" style="background:#dcfce7"><div class="big" style="color:#166534;font-size:16px" id="r-val">MT 0</div><div class="sub" style="color:#166534">receita</div></div>
+          <div class="res-box" style="background:#fffbeb"><div class="big" style="color:#b45309;font-size:14px" id="r-fdir">0 fv</div><div class="sub" style="color:#92400e">favos dir.</div></div>
+          <div class="res-box" style="background:#fff7ed"><div class="big" style="color:#c2410c;font-size:14px" id="r-unids">0 un</div><div class="sub" style="color:#c2410c">unidades</div></div>
+        </div>
+        <div class="divider">🥚 Meta Pequeno</div>
+        <div class="meta-row"><span><b id="m-pp-h">0</b>/<b id="m-pp-meta">0</b> favos</span><span id="m-pp-p" style="font-weight:800">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="bar-pp" style="width:0%"></div></div>
+        <div class="divider">🪺 Meta Grande</div>
+        <div class="meta-row"><span><b id="m-gp-h">0</b>/<b id="m-gp-meta">0</b> favos</span><span id="m-gp-p" style="font-weight:800">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="bar-gp" style="width:0%"></div></div>
+      </div>
+
+      <!-- Meta ponto vs global -->
+      <div class="meta-ponto-card">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">🎯 O meu ponto vs Meta Global</div>
+        <div style="font-size:10px;opacity:.75;margin-bottom:10px">Contribuição do teu ponto para a meta diária</div>
+        <div id="pm-rank" style="font-size:11px;opacity:.85;margin-top:4px;text-align:center">—</div>
+      </div>
+
+      <!-- Vendas -->
+      <div class="card">
+        <div class="section-title">🧾 Vendas de Hoje</div>
+        <div class="vendas-list" id="vendas-list"><div class="empty-msg">Nenhuma venda hoje.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// AGRIVALE OPERADOR — SISTEMA COMPLETO
+// ════════════════════════════════════════════════════
+
+firebase.initializeApp({ databaseURL: "https://agrivale-2026-default-rtdb.firebaseio.com" });
+var db = firebase.database();
+
+// Constantes
+var UNIDS_POR_FAVO = 30;
+var STOCK_ALERTA = 5;
+
+// Estado
+var config = {
+  preco_pp:15, preco_gp:25, preco_pu:0.5, preco_gu:1,
+  meta_diaria_pp:20, meta_diaria_gp:10,
+  meta_mensal_pp:500, meta_mensal_gp:250,
+  pontos:[], stock:{}
+};
+var vendasFirebase = {};
+var clientesData = [];
+var pontoAtual = null;
+var produtoSelecionado = null;
+var metodoPagamento = 'dinheiro';
+var estaOnline = navigator.onLine;
+
+// LocalStorage
+var LS = {
+  config: 'agrivale_config',
+  vendas: 'agrivale_vendas_local',
+  pendentes: 'agrivale_pendentes',
+  ponto: 'agrivale_ponto',
+  clientes: 'agrivale_clientes'
+};
+
+// Tabelas
+var NOMES = {pp:'Pequeno Favo', gp:'Grande Favo', pu:'Pequeno Unid.', gu:'Grande Unid.'};
+var CORES_BG = {pp:'#fffbeb', gp:'#f0fdf4', pu:'#fff7ed', gu:'#ecfeff'};
+var CORES_TX = {pp:'#b45309', gp:'#166534', pu:'#c2410c', gu:'#0e7490'};
+
+// ═══ UTILS ═══
+function fmt(n){ return 'MT ' + (Number(n)||0).toFixed(2); }
+function hoje(){ return new Date().toLocaleDateString('pt-BR'); }
+function cor(p){ return p>=100?'#22c55e':p>=60?'#f59e0b':'#ef4444'; }
+function sanKey(s){ return String(s||'').replace(/[.#$\/\[\] ]/g,'_'); }
+
+function showMsg(txt, tipo){
+  var el = document.getElementById('msg');
+  el.textContent = txt;
+  el.className = 'msg ' + tipo;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 3500);
+}
+
+function atualizarHora(){
+  document.getElementById('hora-badge').textContent =
+    new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+setInterval(atualizarHora, 1000);
+atualizarHora();
+
+// ═══ ONLINE/OFFLINE ═══
+function setStatusOnline(online){
+  estaOnline = online;
+  var badge = document.getElementById('sync-badge');
+  var banner = document.getElementById('offline-banner');
+  if(online){
+    badge.textContent = '🟢 Online';
+    badge.className = 'sync-badge online';
+    banner.style.display = 'none';
+    sincronizarPendentes();
+  } else {
+    badge.textContent = '🔴 Offline';
+    badge.className = 'sync-badge offline';
+    banner.style.display = 'block';
+  }
+}
+window.addEventListener('online', function(){ setStatusOnline(true); });
+window.addEventListener('offline', function(){ setStatusOnline(false); });
+db.ref('.info/connected').on('value', function(snap){ setStatusOnline(snap.val()===true); });
+
+// ═══ CACHE ═══
+function carregarCache(){
+  try{
+    var c = localStorage.getItem(LS.config);
+    if(c) config = Object.assign({}, config, JSON.parse(c));
+    var v = localStorage.getItem(LS.vendas);
+    if(v) vendasFirebase = JSON.parse(v);
+    var cl = localStorage.getItem(LS.clientes);
+    if(cl) clientesData = JSON.parse(cl);
+  }catch(e){}
+}
+
+function saveCache(){
+  try{
+    localStorage.setItem(LS.config, JSON.stringify(config));
+    localStorage.setItem(LS.vendas, JSON.stringify(vendasFirebase));
+    localStorage.setItem(LS.clientes, JSON.stringify(clientesData));
+  }catch(e){}
+}
+
+// ═══ FIREBASE LISTENERS ═══
+db.ref('config').on('value', function(snap){
+  if(snap.exists()) config = Object.assign({}, config, snap.val());
+  saveCache();
+  atualizarPrecos();
+  atualizarStock();
+  if(!pontoAtual) iniciar();
+  renderHoje();
+});
+
+db.ref('vendas').on('value', function(snap){
+  vendasFirebase = snap.exists() ? snap.val() : {};
+  saveCache();
+  renderHoje();
+  renderFiado();
+});
+
+db.ref('clientes').on('value', function(snap){
+  clientesData = snap.exists() ? Object.values(snap.val()) : [];
+  saveCache();
+  renderClientes();
+});
+
+// ═══ PENDENTES ═══
+function getPendentes(){
+  try{ return JSON.parse(localStorage.getItem(LS.pendentes)) || []; }
+  catch(e){ return []; }
+}
+function savePendentes(arr){
+  try{ localStorage.setItem(LS.pendentes, JSON.stringify(arr)); }catch(e){}
+}
+function sincronizarPendentes(){
+  var p = getPendentes();
+  if(p.length === 0) return;
+  var banner = document.getElementById('pending-banner');
+  banner.textContent = '🔄 A sincronizar ' + p.length + ' venda(s)...';
+  banner.style.display = 'block';
+  var ok = 0;
+  p.forEach(function(v){
+    db.ref('vendas').push(v, function(err){
+      if(!err){
+        ok++;
+        if(ok === p.length){
+          savePendentes([]);
+          banner.style.display = 'none';
+          showMsg('✅ ' + ok + ' venda(s) sincronizada(s)!', 'ok');
+        }
+      }
+    });
+  });
+}
+
+// ═══ PONTOS ═══
+function iniciar(){
+  var salvo = localStorage.getItem(LS.ponto);
+  if(salvo && config.pontos && config.pontos.indexOf(salvo) >= 0){
+    pontoAtual = salvo;
+    mostrarPrincipal();
+  } else {
+    mostrarSelecao();
+  }
+}
+
+function mostrarSelecao(){
+  document.getElementById('tela-ponto').style.display = 'flex';
+  document.getElementById('tela-principal').style.display = 'none';
+  document.getElementById('op-tabs').style.display = 'none';
+  document.getElementById('header-sub').textContent = 'Selecione o ponto';
+  renderListaPontos();
+}
+
+function mostrarPrincipal(){
+  document.getElementById('tela-ponto').style.display = 'none';
+  document.getElementById('tela-principal').style.display = 'block';
+  document.getElementById('op-tabs').style.display = 'flex';
+  document.getElementById('header-sub').textContent = '📍 ' + pontoAtual;
+  document.getElementById('ponto-nome-bar').textContent = '📍 ' + pontoAtual;
+  atualizarStock();
+  renderHoje();
+}
+
+function renderListaPontos(){
+  var el = document.getElementById('lista-pontos');
+  var pontos = config.pontos || [];
+  if(pontos.length === 0){
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px">Aguarde o gestor configurar os pontos...</div>';
+    return;
+  }
+  var icones = ['🏪','🏬','🛒','🏢','🏭','🏗️','🏠','🏡'];
+  var html = '';
+  for(var i=0; i<pontos.length; i++){
+    var p = pontos[i];
+    var icon = icones[i % icones.length];
+    html += '<button class="ponto-btn" data-ponto="' + p.replace(/"/g,'&quot;') + '" onclick="escolherPonto(this.dataset.ponto)">';
+    html += '<span style="font-size:22px">' + icon + '</span><span>' + p + '</span></button>';
+  }
+  el.innerHTML = html;
+}
+
+function escolherPonto(nome){
+  pontoAtual = nome;
+  localStorage.setItem(LS.ponto, nome);
+  mostrarPrincipal();
+}
+
+function trocarPonto(){
+  localStorage.removeItem(LS.ponto);
+  pontoAtual = null;
+  mostrarSelecao();
+}
+
+// ═══ TABS ═══
+function mudarTela(t){
+  var screens = document.querySelectorAll('.op-screen');
+  for(var i=0; i<screens.length; i++) screens[i].classList.remove('active');
+  var tabs = document.querySelectorAll('.op-tab');
+  for(var j=0; j<tabs.length; j++) tabs[j].classList.remove('active');
+  document.getElementById('screen-' + t).classList.add('active');
+  var tab = document.querySelector('.op-tab[data-tela="' + t + '"]');
+  if(tab) tab.classList.add('active');
+  if(t === 'clientes') renderClientes();
+  if(t === 'fiado') renderFiado();
+  if(t === 'hoje') renderHoje();
+}
+
+// ═══ PREÇOS / STOCK ═══
+function atualizarPrecos(){
+  ['pp','gp','pu','gu'].forEach(function(p){
+    var el = document.getElementById('preco-' + p + '-lbl');
+    if(el) el.textContent = fmt(config['preco_' + p]);
+  });
+}
+
+function getStock(prod){
+  if(!pontoAtual || !config.stock) return 999;
+  var key = sanKey(pontoAtual);
+  if(!config.stock[key]) return 0;
+  return Number(config.stock[key][prod]) || 0;
+}
+
+function atualizarStock(){
+  if(!pontoAtual) return;
+  var pp = getStock('pp'), gp = getStock('gp');
+  setStockBox('stock-pp-box','stock-pp-val', pp);
+  setStockBox('stock-gp-box','stock-gp-val', gp);
+  var btnPP = document.getElementById('btn-pp');
+  var btnGP = document.getElementById('btn-gp');
+  if(btnPP) btnPP.className = 'sel-btn' + (pp<=0?' sem-stock':'') + (produtoSelecionado==='pp'?' active-pp':'');
+  if(btnGP) btnGP.className = 'sel-btn' + (gp<=0?' sem-stock':'') + (produtoSelecionado==='gp'?' active-gp':'');
+}
+
+function setStockBox(boxId, valId, val){
+  var box = document.getElementById(boxId);
+  var vel = document.getElementById(valId);
+  if(!box || !vel) return;
+  vel.textContent = val;
+  var cls = val<=0?'zero':(val<=STOCK_ALERTA?'low':'ok');
+  box.className = 'stock-item ' + cls;
+  vel.style.color = val<=0?'#991b1b':(val<=STOCK_ALERTA?'#92400e':'#166534');
+}
+
+function deduzirStock(prod, qtd){
+  if(!pontoAtual) return;
+  var key = sanKey(pontoAtual);
+  var atual = getStock(prod);
+  var novo = Math.max(0, atual - qtd);
+  var upd = {};
+  upd['config/stock/' + key + '/' + prod] = novo;
+  db.ref().update(upd);
+}
+
+// ═══ VENDA ═══
+function selecionarProduto(prod){
+  if(prod === 'pp' && getStock('pp') <= 0){ showMsg('❌ Stock de Favo Pequeno esgotado!','erro'); return; }
+  if(prod === 'gp' && getStock('gp') <= 0){ showMsg('❌ Stock de Favo Grande esgotado!','erro'); return; }
+  produtoSelecionado = prod;
+  ['pp','gp','pu','gu'].forEach(function(k){
+    var btn = document.getElementById('btn-' + k);
+    if(btn) btn.className = 'sel-btn' + (k === prod ? ' active-' + prod : '');
+  });
+  atualizarPreview();
+}
+
+function addQtd(n){
+  var inp = document.getElementById('input-qtd');
+  inp.value = (parseInt(inp.value) || 0) + n;
+  atualizarPreview();
+}
+
+function limpar(){
+  document.getElementById('input-qtd').value = '';
+  document.getElementById('input-cliente').value = '';
+  document.getElementById('preview-box').style.display = 'none';
+  document.getElementById('auto-list').style.display = 'none';
+  produtoSelecionado = null;
+  ['pp','gp','pu','gu'].forEach(function(k){
+    var btn = document.getElementById('btn-' + k);
+    if(btn) btn.className = 'sel-btn';
+  });
+  metodoPagamento = 'dinheiro';
+  selecionarPagamento('dinheiro');
+}
+
+function atualizarPreview(){
+  var q = parseInt(document.getElementById('input-qtd').value) || 0;
+  var prev = document.getElementById('preview-box');
+  if(q > 0 && produtoSelecionado){
+    var preco = Number(config['preco_' + produtoSelecionado]) || 0;
+    var ehFavo = (produtoSelecionado === 'pp' || produtoSelecionado === 'gp');
+    var extra = '';
+    if(!ehFavo && q >= UNIDS_POR_FAVO){
+      var fC = Math.floor(q / UNIDS_POR_FAVO);
+      var r = q % UNIDS_POR_FAVO;
+      extra = '<div style="font-size:10px;margin-top:3px;color:#166534">🔄 ' + fC + ' favo(s) + ' + r + ' un pendentes</div>';
+    }
+    prev.style.display = 'block';
+    prev.style.background = CORES_BG[produtoSelecionado];
+    prev.style.color = CORES_TX[produtoSelecionado];
+    prev.innerHTML = '<b>' + NOMES[produtoSelecionado] + '</b> · ' + q + (ehFavo?' favo(s)':' unid.') +
+      '<br><span style="font-size:18px;font-weight:900">' + fmt(q*preco) + '</span>' +
+      '<span style="font-size:11px"> (' + q + ' × ' + fmt(preco) + ')</span>' + extra;
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+function selecionarPagamento(m){
+  metodoPagamento = m;
+  var btns = document.querySelectorAll('.pag-btn');
+  for(var i=0; i<btns.length; i++){
+    btns[i].className = 'pag-btn';
+    if(btns[i].dataset.pag === m){
+      btns[i].className = 'pag-btn ' + (m==='fiado'?'active-fiado':'active');
+    }
+  }
+  document.getElementById('fiado-warning').style.display = (m==='fiado'||m==='misto')?'block':'none';
+}
+
+function registrarVenda(){
+  if(!pontoAtual){ showMsg('❌ Selecione o ponto primeiro!','erro'); return; }
+  if(!produtoSelecionado){ showMsg('❌ Selecione o produto!','erro'); return; }
+  var q = parseInt(document.getElementById('input-qtd').value) || 0;
+  if(q <= 0){ showMsg('❌ Informe a quantidade!','erro'); return; }
+
+  var ehFavo = (produtoSelecionado === 'pp' || produtoSelecionado === 'gp');
+  if(ehFavo && getStock(produtoSelecionado) < q){
+    showMsg('❌ Stock insuficiente! Disponível: ' + getStock(produtoSelecionado),'erro');
+    return;
+  }
+
+  var cliente = document.getElementById('input-cliente').value.trim() || 'Cliente não informado';
+  if((metodoPagamento==='fiado' || metodoPagamento==='misto') && cliente === 'Cliente não informado'){
+    showMsg('❌ Venda a fiado exige nome do cliente!','erro');
+    return;
+  }
+
+  var preco = Number(config['preco_' + produtoSelecionado]) || 0;
+  var tipo = produtoSelecionado.charAt(0) === 'p' ? 'pequeno' : 'grande';
+  var agora = new Date();
+
+  var venda = {
+    data: hoje(),
+    produto: produtoSelecionado,
+    tipo: tipo,
+    formato: ehFavo ? 'favo' : 'unidade',
+    qtd: q,
+    cliente: cliente,
+    preco_unitario: preco,
+    valor: q * preco,
+    ponto: pontoAtual,
+    pagamento: metodoPagamento,
+    pago: metodoPagamento !== 'fiado',
+    hora: agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    timestamp: Date.now()
+  };
+
+  if(estaOnline){
+    db.ref('vendas').push(venda);
+    if(ehFavo) deduzirStock(produtoSelecionado, q);
+    showMsg('✅ Venda registada!','ok');
+  } else {
+    var pend = getPendentes();
+    pend.push(venda);
+    savePendentes(pend);
+    showMsg('📵 Guardada offline!','aviso');
+  }
+
+  limpar();
+  renderHoje();
+}
+
+// ═══ CLIENTES ═══
+function abrirModalCliente(preNome){
+  document.getElementById('nc-nome').value = preNome || '';
+  document.getElementById('nc-tel').value = '';
+  document.getElementById('nc-morada').value = '';
+  document.getElementById('modal-cliente').classList.add('open');
+  document.getElementById('nc-nome').focus();
+}
+
+function fecharModalCliente(){
+  document.getElementById('modal-cliente').classList.remove('open');
+}
+
+function salvarNovoCliente(){
+  var nome = document.getElementById('nc-nome').value.trim();
+  if(!nome){ showMsg('❌ Nome obrigatório!','erro'); return; }
+  var existe = clientesData.find(function(c){ return c.nome.toLowerCase() === nome.toLowerCase(); });
+  if(existe){ showMsg('⚠️ Cliente já existe!','aviso'); fecharModalCliente(); return; }
+  var novo = {
+    id: Date.now() + '',
+    nome: nome,
+    tel: document.getElementById('nc-tel').value.trim(),
+    morada: document.getElementById('nc-morada').value.trim(),
+    criado: hoje()
+  };
+  db.ref('clientes/' + sanKey(novo.id)).set(novo);
+  fecharModalCliente();
+  showMsg('✅ Cliente ' + nome + ' cadastrado!','ok');
+}
+
+function renderClientes(){
+  var el = document.getElementById('clientes-list');
+  if(!el) return;
+  var busca = (document.getElementById('busca-cliente') || {}).value || '';
+  var lista = clientesData.slice();
+  if(busca){
+    lista = lista.filter(function(c){
+      return c.nome.toLowerCase().indexOf(busca.toLowerCase()) >= 0 ||
+        (c.tel && c.tel.indexOf(busca) >= 0);
+    });
+  }
+  if(lista.length === 0){
+    el.innerHTML = '<div class="empty-msg">Nenhum cliente encontrado.</div>';
+    return;
+  }
+  var vs = Object.values(vendasFirebase);
+  el.innerHTML = lista.map(function(cl){
+    var vsCl = vs.filter(function(v){ return v.cliente === cl.nome; });
+    var total = vsCl.reduce(function(s,v){ return s + v.valor; }, 0);
+    var ultima = vsCl.length>0 ? vsCl.slice().sort(function(a,b){return b.timestamp-a.timestamp;})[0].data : '—';
+    var safeNome = (cl.nome || '').replace(/"/g,'&quot;');
+    return '<div class="cliente-card" data-nome="' + safeNome + '" onclick="selecionarParaVenda(this.dataset.nome)">' +
+      '<div class="cc-nome">' + cl.nome + '</div>' +
+      '<div class="cc-info">' + (cl.tel?'📞 ' + cl.tel + ' ':'') + (cl.morada?'📍 ' + cl.morada:'') + '</div>' +
+      '<div class="cc-stats">' +
+        '<span class="cc-stat">🛒 ' + vsCl.length + '</span>' +
+        '<span class="cc-stat">💰 ' + fmt(total) + '</span>' +
+        '<span class="cc-stat">📅 ' + ultima + '</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+function selecionarParaVenda(nome){
+  mudarTela('venda');
+  var inp = document.getElementById('input-cliente');
+  if(inp) inp.value = nome;
+  showMsg('👤 ' + nome + ' seleccionado!','ok');
+}
+
+// ═══ AUTOCOMPLETE ═══
+function setupAutocomplete(){
+  var inp = document.getElementById('input-cliente');
+  var list = document.getElementById('auto-list');
+  if(!inp || !list) return;
+
+  inp.addEventListener('input', function(){
+    var val = this.value.trim().toLowerCase();
+    if(val.length < 1){ list.style.display = 'none'; return; }
+    var clientes = clientesData.filter(function(c){
+      return c.nome.toLowerCase().indexOf(val) >= 0;
+    }).slice(0, 5);
+
+    var html = clientes.map(function(cl){
+      var safeNome = (cl.nome || '').replace(/"/g,'&quot;');
+      return '<div class="autocomplete-item" data-nome="' + safeNome + '" onclick="escolherAuto(this.dataset.nome)">' +
+        '<div class="ac-nome">' + cl.nome + '</div>' +
+        '<div class="ac-info">' + (cl.tel?'📞 ' + cl.tel + ' ':'') + (cl.morada?'📍 ' + cl.morada:'') + '</div>' +
+        '</div>';
+    }).join('');
+
+    var nomeNovo = inp.value.trim().replace(/"/g,'&quot;');
+    html += '<div class="autocomplete-item" data-nome="' + nomeNovo + '" onclick="cadastrarDoAuto(this.dataset.nome)" style="color:#166534;font-weight:700">+ Cadastrar "' + inp.value.trim() + '" como novo cliente</div>';
+
+    list.innerHTML = html;
+    list.style.display = 'block';
+  });
+
+  document.addEventListener('click', function(e){
+    if(!inp.parentElement.contains(e.target)) list.style.display = 'none';
+  });
+}
+
+function escolherAuto(nome){
+  document.getElementById('input-cliente').value = nome;
+  document.getElementById('auto-list').style.display = 'none';
+}
+
+function cadastrarDoAuto(nome){
+  document.getElementById('auto-list').style.display = 'none';
+  abrirModalCliente(nome);
+}
+
+// ═══ FIADO ═══
+function renderFiado(){
+  var el = document.getElementById('fiado-list');
+  if(!el) return;
+  var todas = Object.values(vendasFirebase).filter(function(v){
+    return v.pagamento === 'fiado' && !v.pago && v.ponto === pontoAtual;
+  });
+
+  var porCliente = {};
+  todas.forEach(function(v){
+    var n = v.cliente || 'Sem nome';
+    if(!porCliente[n]) porCliente[n] = {nome:n, total:0, vendas:[]};
+    porCliente[n].total += v.valor;
+    porCliente[n].vendas.push(v);
+  });
+
+  var arr = Object.values(porCliente).sort(function(a,b){ return b.total - a.total; });
+  var totalGeral = arr.reduce(function(s,c){ return s + c.total; }, 0);
+
+  document.getElementById('fiado-total-val').textContent = fmt(totalGeral);
+  document.getElementById('fiado-total-n').textContent = arr.length;
+
+  if(arr.length === 0){
+    el.innerHTML = '<div class="empty-msg">✅ Nenhuma dívida em aberto neste ponto.</div>';
+    return;
+  }
+
+  el.innerHTML = arr.map(function(cl){
+    var det = cl.vendas.slice(0,3).map(function(v){
+      return '<div style="font-size:10px;color:#92400e;margin-top:2px">• ' + v.data + ' ' + v.hora + ' · ' + v.qtd +
+        (v.formato==='favo'?' fv':' un') + ' · ' + fmt(v.valor) + '</div>';
+    }).join('');
+    var mais = cl.vendas.length > 3 ? '<div style="font-size:10px;color:#92400e;margin-top:2px">+ ' + (cl.vendas.length-3) + ' outras</div>' : '';
+    var safeNome = (cl.nome || '').replace(/"/g,'&quot;');
+    return '<div class="fiado-card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div class="fc-nome">📝 ' + cl.nome + '</div>' +
+        '<div style="font-size:10px;color:#92400e;margin-top:2px">' + cl.vendas.length + ' venda(s)</div></div>' +
+        '<div class="fc-val">' + fmt(cl.total) + '</div>' +
+      '</div>' + det + mais +
+      '<button class="btn-pagar" data-nome="' + safeNome + '" onclick="marcarPago(this.dataset.nome)">💰 Marcar como Pago</button>' +
+      '</div>';
+  }).join('');
+}
+
+function marcarPago(nome){
+  if(!confirm('Confirma que ' + nome + ' pagou a dívida?')) return;
+  if(!estaOnline){ showMsg('❌ Precisa de internet!','erro'); return; }
+  var upd = {};
+  Object.keys(vendasFirebase).forEach(function(k){
+    var v = vendasFirebase[k];
+    if(v.pagamento === 'fiado' && !v.pago && v.cliente === nome){
+      upd['vendas/' + k + '/pago'] = true;
+      upd['vendas/' + k + '/data_pagamento'] = hoje();
+    }
+  });
+  db.ref().update(upd);
+  showMsg('✅ Dívida paga!','ok');
+}
+
+// ═══ RESUMO HOJE ═══
+function renderHoje(){
+  if(!pontoAtual) return;
+  var dEl = document.getElementById('data-hoje');
+  if(dEl) dEl.textContent = hoje();
+
+  var pendentes = getPendentes().filter(function(v){ return v.ponto === pontoAtual; });
+  var todas = Object.values(vendasFirebase).filter(function(v){ return v.ponto === pontoAtual; })
+    .concat(pendentes.map(function(v){ return Object.assign({}, v, {_pend:true}); }));
+  var vh = todas.filter(function(v){ return v.data === hoje(); });
+
+  var qpp = vh.filter(function(v){return v.produto==='pp';}).reduce(function(s,v){return s+v.qtd;},0);
+  var qgp = vh.filter(function(v){return v.produto==='gp';}).reduce(function(s,v){return s+v.qtd;},0);
+  var qpu = vh.filter(function(v){return v.produto==='pu';}).reduce(function(s,v){return s+v.qtd;},0);
+  var qgu = vh.filter(function(v){return v.produto==='gu';}).reduce(function(s,v){return s+v.qtd;},0);
+
+  var convP = {favos:Math.floor(qpu/UNIDS_POR_FAVO), pend:qpu%UNIDS_POR_FAVO};
+  var convG = {favos:Math.floor(qgu/UNIDS_POR_FAVO), pend:qgu%UNIDS_POR_FAVO};
+  var totalPP = qpp + convP.favos;
+  var totalGP = qgp + convG.favos;
+  var receita = vh.reduce(function(s,v){return s+v.valor;},0);
+
+  setTxt('conv-pu-t', qpu + ' un');
+  setTxt('conv-pu-f', convP.favos + ' fv');
+  setTxt('conv-pu-p', '+' + convP.pend + ' pend');
+  setTxt('conv-gu-t', qgu + ' un');
+  setTxt('conv-gu-f', convG.favos + ' fv');
+  setTxt('conv-gu-p', '+' + convG.pend + ' pend');
+
+  setTxt('r-favos', totalPP + totalGP);
+  setTxt('r-val', fmt(receita));
+  setTxt('r-fdir', (qpp+qgp) + ' fv');
+  setTxt('r-unids', (qpu+qgu) + ' un');
+
+  var pPP = Math.min((totalPP/(config.meta_diaria_pp||1))*100, 100);
+  var pGP = Math.min((totalGP/(config.meta_diaria_gp||1))*100, 100);
+
+  setTxt('m-pp-h', totalPP);
+  setTxt('m-pp-meta', config.meta_diaria_pp||0);
+  setTxt('m-pp-p', Math.round(pPP)+'%');
+  var mppP = document.getElementById('m-pp-p');
+  if(mppP) mppP.style.color = cor(pPP);
+  setBar('bar-pp', pPP);
+
+  setTxt('m-gp-h', totalGP);
+  setTxt('m-gp-meta', config.meta_diaria_gp||0);
+  setTxt('m-gp-p', Math.round(pGP)+'%');
+  var mgpP = document.getElementById('m-gp-p');
+  if(mgpP) mgpP.style.color = cor(pGP);
+  setBar('bar-gp', pGP);
+
+  // Ranking
+  var rankEl = document.getElementById('pm-rank');
+  if(rankEl && config.pontos && config.pontos.length > 0){
+    var todasVendas = Object.values(vendasFirebase);
+    var ranks = config.pontos.map(function(p){
+      var vp = todasVendas.filter(function(v){return v.ponto===p && v.data===hoje();});
+      var fv = vp.filter(function(v){return v.produto==='pp';}).reduce(function(s,v){return s+v.qtd;},0) +
+               vp.filter(function(v){return v.produto==='gp';}).reduce(function(s,v){return s+v.qtd;},0) +
+               Math.floor(vp.filter(function(v){return v.produto==='pu';}).reduce(function(s,v){return s+v.qtd;},0)/UNIDS_POR_FAVO) +
+               Math.floor(vp.filter(function(v){return v.produto==='gu';}).reduce(function(s,v){return s+v.qtd;},0)/UNIDS_POR_FAVO);
+      return {p:p, fv:fv};
+    }).sort(function(a,b){ return b.fv - a.fv; });
+    var pos = -1;
+    for(var i=0; i<ranks.length; i++) if(ranks[i].p === pontoAtual) pos = i + 1;
+    if(pos > 0){
+      var medalhas = ['🥇','🥈','🥉'];
+      var medal = pos <= 3 ? medalhas[pos-1] : '#' + pos;
+      rankEl.textContent = medal + ' O teu ponto está em ' + pos + 'º de ' + ranks.length + ' pontos hoje';
+    }
+  }
+
+  // Lista vendas
+  var sorted = vh.slice().sort(function(a,b){return b.timestamp-a.timestamp;});
+  var lista = document.getElementById('vendas-list');
+  if(!lista) return;
+  if(sorted.length === 0){
+    lista.innerHTML = '<div class="empty-msg">Nenhuma venda hoje.</div>';
+    return;
+  }
+  lista.innerHTML = sorted.map(function(v){
+    var cls = v._pend ? 'pend' : (v.produto || 'pp');
+    var tagTxt = v._pend ? 'PEND' : ((v.tipo==='pequeno'?'PEQ':'GRA') + ' ' + (v.formato==='favo'?'FAVO':'UNID'));
+    return '<div class="venda-item ' + cls + '">' +
+      '<div><div style="font-weight:700;font-size:12px;color:#1e3a5f">' +
+      '<span class="tag" style="background:#f3f4f6;color:#555">' + tagTxt + '</span>' + v.cliente + '</div>' +
+      '<div style="font-size:10px;color:#888;margin-top:1px">' + v.hora + ' · ' + fmt(v.preco_unitario) + '/' +
+      (v.formato==='favo'?'fv':'un') + (v._pend?' · ⏳':'') + '</div></div>' +
+      '<div style="text-align:right">' +
+      '<div style="font-weight:800;font-size:13px;color:' + (CORES_TX[v.produto]||'#374151') + '">' +
+      v.qtd + (v.formato==='favo'?' fv':' un') + '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:#166534">' + fmt(v.valor) + '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function setTxt(id, txt){
+  var el = document.getElementById(id);
+  if(el) el.textContent = txt;
+}
+function setBar(id, perc){
+  var el = document.getElementById(id);
+  if(el){
+    el.style.width = perc + '%';
+    el.style.background = cor(perc);
+  }
+}
+
+// ═══ INIT ═══
+carregarCache();
+atualizarPrecos();
+setStatusOnline(navigator.onLine);
+setupAutocomplete();
+if(navigator.onLine) sincronizarPendentes();
+// Se já tiver config em cache, inicia; senão espera do Firebase
+setTimeout(function(){ if(!pontoAtual && config.pontos && config.pontos.length > 0) iniciar(); }, 500);
+setTimeout(function(){ if(!pontoAtual) iniciar(); }, 3000);
+</script>
+</body>
+</html>
