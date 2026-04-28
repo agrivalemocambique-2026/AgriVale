@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#166534"/>
+<title>AGRIVALE - Fazer Pedido</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#f0fdf4;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:40px;}
+button,input,select,textarea{font-family:inherit;}
+
+.hero{background:#fff;padding:18px 18px 20px;text-align:center;border-radius:0 0 20px 20px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.logo-wrap{margin-bottom:4px;}
+.logo-img{max-width:180px;width:70%;height:auto;display:block;margin:0 auto;}
+.hero p{font-size:12px;color:#666;margin-top:3px;}
+.hero .badge{display:inline-block;background:#166534;color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;margin-top:10px;}
+
+.section{padding:0 16px;margin-top:16px;}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:12px;}
+.section-title{font-size:15px;font-weight:800;color:#14532d;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.section-title .num{background:#16a34a;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;}
+
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.prod-card{border-radius:12px;padding:12px;text-align:center;border:2px solid #e5e7eb;background:#fff;}
+.prod-card.pp{border-color:#fcd34d;background:#fffbeb;}
+.prod-card.gp{border-color:#86efac;background:#f0fdf4;}
+.prod-card.pu{border-color:#fdba74;background:#fff7ed;}
+.prod-card.gu{border-color:#67e8f9;background:#ecfeff;}
+.prod-card .icon{font-size:30px;}
+.prod-card .nome{font-size:11px;font-weight:800;margin-top:4px;}
+.prod-card .preco{font-size:13px;font-weight:900;margin-top:2px;}
+.prod-card.pp .preco{color:#b45309;}
+.prod-card.gp .preco{color:#166534;}
+.prod-card.pu .preco{color:#c2410c;}
+.prod-card.gu .preco{color:#0e7490;}
+.prod-card .sub{font-size:9px;color:#888;margin-top:2px;}
+.qtd-control{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;}
+.qtd-btn{width:28px;height:28px;border-radius:6px;border:none;background:#fff;color:#166534;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.qtd-btn:active{background:#dcfce7;}
+.qtd-input{width:48px;height:28px;border-radius:6px;border:1.5px solid #d1fae5;text-align:center;font-size:14px;font-weight:800;background:#fff;}
+
+.entrega-toggle{display:flex;gap:8px;margin-bottom:12px;}
+.entrega-btn{flex:1;padding:14px 8px;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;cursor:pointer;text-align:center;}
+.entrega-btn.active-entrega{border-color:#16a34a;background:#f0fdf4;}
+.entrega-btn.active-levant{border-color:#2563eb;background:#eff6ff;}
+.entrega-btn .ic{font-size:24px;}
+.entrega-btn .tt{font-size:11px;font-weight:800;margin-top:3px;}
+.entrega-btn .sb{font-size:9px;color:#888;margin-top:1px;}
+
+label{font-size:11px;font-weight:700;color:#555;display:block;margin-top:8px;margin-bottom:3px;}
+label .req{color:#dc2626;}
+input, select, textarea{width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:14px;background:#fff;}
+input:focus, select:focus, textarea:focus{outline:none;border-color:#16a34a;}
+textarea{resize:vertical;min-height:60px;}
+
+.ponto-list{display:grid;gap:8px;}
+.ponto-option{padding:12px 14px;border-radius:10px;border:2px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.ponto-option.active{border-color:#2563eb;background:#eff6ff;}
+.ponto-option .ic{font-size:22px;}
+.ponto-option .nm{font-size:13px;font-weight:700;color:#1e3a5f;}
+
+.pag-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.pag-btn-p{padding:10px 4px;border-radius:10px;border:2px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;color:#555;}
+.pag-btn-p .ic{font-size:18px;}
+.pag-btn-p.active{border-color:#16a34a;background:#f0fdf4;color:#166534;}
+
+.resumo-card{background:linear-gradient(135deg,#14532d,#15803d);border-radius:14px;padding:16px;color:#fff;margin-top:4px;}
+.resumo-card .rs-linha{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.15);}
+.resumo-card .rs-linha:last-of-type{border-bottom:none;}
+.resumo-card .rs-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid rgba(255,255,255,.3);font-size:16px;font-weight:900;}
+.resumo-card .vazio{text-align:center;padding:10px 0;opacity:.75;font-size:12px;}
+
+.btn-confirm{width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#065f46,#16a34a);color:#fff;font-size:16px;font-weight:900;letter-spacing:.5px;margin-top:6px;cursor:pointer;box-shadow:0 4px 12px rgba(22,163,74,.3);}
+.btn-confirm:disabled{opacity:.5;box-shadow:none;}
+
+.msg-float{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.15);display:none;}
+.msg-float.ok{background:#16a34a;color:#fff;}
+.msg-float.erro{background:#dc2626;color:#fff;}
+
+.sucesso{padding:30px 20px;text-align:center;}
+.sucesso .check{font-size:70px;margin-bottom:10px;}
+.sucesso h2{font-size:22px;font-weight:900;color:#166534;margin-bottom:6px;}
+.sucesso p{font-size:13px;color:#555;margin-bottom:16px;line-height:1.5;}
+.sucesso .num-pedido{background:#f0fdf4;border:2px solid #86efac;border-radius:10px;padding:10px;margin-bottom:14px;}
+.sucesso .num-pedido b{font-size:18px;color:#14532d;}
+.btn-wpp{width:100%;padding:14px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:15px;font-weight:900;margin-bottom:8px;cursor:pointer;}
+.btn-novo{width:100%;padding:12px;border-radius:12px;border:1.5px solid #16a34a;background:#f0fdf4;color:#166534;font-size:13px;font-weight:700;cursor:pointer;}
+
+.loading-tela{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;}
+.spinner{width:40px;height:40px;border:4px solid #dcfce7;border-top-color:#16a34a;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Tipo de pedido (imediato vs reserva) */
+.tipo-ped-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.tipo-ped-btn{flex:1;padding:12px 8px;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;cursor:pointer;text-align:center;}
+.tipo-ped-btn.active-imed{border-color:#16a34a;background:#f0fdf4;}
+.tipo-ped-btn.active-res{border-color:#f59e0b;background:#fffbeb;}
+.tipo-ped-btn .ic{font-size:22px;}
+.tipo-ped-btn .tt{font-size:11px;font-weight:800;margin-top:3px;}
+.tipo-ped-btn .sb{font-size:9px;color:#888;margin-top:1px;}
+
+/* Bloco de reserva */
+.reserva-box{background:#fffbeb;border:2px solid #fcd34d;border-radius:12px;padding:12px;margin-bottom:12px;display:none;}
+.reserva-box.active{display:block;}
+.reserva-row{display:flex;gap:8px;margin-bottom:8px;}
+.reserva-row > div{flex:1;}
+
+/* Sinal info */
+.sinal-info{background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:#92400e;}
+.sinal-info .sinal-val{font-size:16px;font-weight:900;color:#b45309;display:block;margin-top:3px;}
+
+/* Lista espera */
+.espera-banner{background:#fee2e2;border:2px solid #fca5a5;border-radius:10px;padding:10px;margin-bottom:10px;display:none;}
+.espera-banner.show{display:block;}
+.btn-espera{width:100%;padding:12px;border-radius:10px;border:none;background:#dc2626;color:#fff;font-size:13px;font-weight:800;margin-top:6px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo-wrap"><img src="logo.png" alt="AGRIVALE" class="logo-img"/></div>
+  <p>Ovos frescos directos à sua porta</p>
+  <div class="badge" id="status-badge">📦 Fazer Pedido Online</div>
+</div>
+
+<div id="loading-screen" class="loading-tela">
+  <div class="spinner"></div>
+  <p style="margin-top:14px;color:#666;font-size:12px">A carregar...</p>
+</div>
+
+<div id="form-screen" style="display:none">
+
+  <div class="section">
+    <div class="card">
+      <div class="section-title"><span class="num">1</span> Escolha os Produtos</div>
+      <div class="prod-grid">
+        <div class="prod-card pp">
+          <div class="icon">🥚📦</div><div class="nome">Favo Pequeno</div><div class="preco" id="p-pp">MT 0</div><div class="sub">30 ovos</div>
+          <div class="qtd-control"><button class="qtd-btn" onclick="decQtd('pp')">−</button><input type="number" class="qtd-input" id="q-pp" value="0" min="0" onchange="atualizarResumo()"/><button class="qtd-btn" onclick="incQtd('pp')">+</button></div>
+        </div>
+        <div class="prod-card gp">
+          <div class="icon">🪺📦</div><div class="nome">Favo Grande</div><div class="preco" id="p-gp">MT 0</div><div class="sub">30 ovos</div>
+          <div class="qtd-control"><button class="qtd-btn" onclick="decQtd('gp')">−</button><input type="number" class="qtd-input" id="q-gp" value="0" min="0" onchange="atualizarResumo()"/><button class="qtd-btn" onclick="incQtd('gp')">+</button></div>
+        </div>
+        <div class="prod-card pu">
+          <div class="icon">🥚1️⃣</div><div class="nome">Unid. Pequena</div><div class="preco" id="p-pu">MT 0</div><div class="sub">avulso</div>
+          <div class="qtd-control"><button class="qtd-btn" onclick="decQtd('pu')">−</button><input type="number" class="qtd-input" id="q-pu" value="0" min="0" onchange="atualizarResumo()"/><button class="qtd-btn" onclick="incQtd('pu')">+</button></div>
+        </div>
+        <div class="prod-card gu">
+          <div class="icon">🪺1️⃣</div><div class="nome">Unid. Grande</div><div class="preco" id="p-gu">MT 0</div><div class="sub">avulso</div>
+          <div class="qtd-control"><button class="qtd-btn" onclick="decQtd('gu')">−</button><input type="number" class="qtd-input" id="q-gu" value="0" min="0" onchange="atualizarResumo()"/><button class="qtd-btn" onclick="incQtd('gu')">+</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="section-title"><span class="num">2</span> Como quer receber?</div>
+      <div class="entrega-toggle">
+        <button class="entrega-btn active-entrega" id="bt-entrega" onclick="setTipoEntrega('entrega')"><div class="ic">🚚</div><div class="tt">Entrega ao Domicílio</div><div class="sb">Levamos até si</div></button>
+        <button class="entrega-btn" id="bt-levant" onclick="setTipoEntrega('levantamento')"><div class="ic">🏪</div><div class="tt">Levantamento</div><div class="sb">Vai buscar ao ponto</div></button>
+      </div>
+      <div id="sec-entrega">
+        <label>Morada de entrega <span class="req">*</span></label>
+        <textarea id="morada" placeholder="Bairro, rua, ponto de referência..."></textarea>
+      </div>
+      <div id="sec-levant" style="display:none">
+        <label>Escolha o ponto <span class="req">*</span></label>
+        <div class="ponto-list" id="lista-pontos-pedido"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="section-title"><span class="num">3</span> Quando quer receber?</div>
+      <div class="tipo-ped-toggle">
+        <button class="tipo-ped-btn active-imed" id="bt-imed" onclick="setTipoPedido('imediato')">
+          <div class="ic">📦</div><div class="tt">Imediato</div><div class="sb">Hoje, o quanto antes</div>
+        </button>
+        <button class="tipo-ped-btn" id="bt-res" onclick="setTipoPedido('reserva')">
+          <div class="ic">📅</div><div class="tt">Reservar</div><div class="sb">Para data futura</div>
+        </button>
+      </div>
+      <div class="reserva-box" id="reserva-box">
+        <label style="margin-top:0">📅 Data e hora da entrega/levantamento <span class="req">*</span></label>
+        <div class="reserva-row">
+          <div><label style="margin-top:0">Data</label><input type="date" id="res-data" onchange="atualizarSinal()"/></div>
+          <div><label style="margin-top:0">Hora</label><input type="time" id="res-hora"/></div>
+        </div>
+        <div style="font-size:10px;color:#92400e" id="res-aviso">Mínimo 1 dia de antecedência</div>
+        <div class="sinal-info" id="sinal-info" style="display:none">
+          💰 Para confirmar a reserva é necessário pagar um sinal/depósito de <b id="sinal-perc">30%</b>:
+          <span class="sinal-val" id="sinal-valor">MT 0</span>
+          <div style="font-size:10px;margin-top:5px">O resto é pago no momento da entrega.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="section-title"><span class="num">4</span> Seus Dados</div>
+      <label>Nome <span class="req">*</span></label>
+      <input type="text" id="cli-nome" placeholder="O seu nome completo"/>
+      <label>Telefone <span class="req">*</span></label>
+      <input type="tel" id="cli-tel" placeholder="84 000 0000"/>
+      <label>Código de cliente (se tiver)</label>
+      <input type="text" id="cli-codigo" placeholder="Ex: C001 (opcional)"/>
+      <label>Método de pagamento preferido</label>
+      <div class="pag-grid" style="margin-top:4px">
+        <button class="pag-btn-p active" data-pag="dinheiro" onclick="setPagPedido('dinheiro')"><span class="ic">💵</span><span>Dinheiro</span></button>
+        <button class="pag-btn-p" data-pag="mpesa" onclick="setPagPedido('mpesa')"><span class="ic">📱</span><span>M-Pesa</span></button>
+        <button class="pag-btn-p" data-pag="emola" onclick="setPagPedido('emola')"><span class="ic">📲</span><span>E-mola</span></button>
+        <button class="pag-btn-p" data-pag="transf" onclick="setPagPedido('transf')"><span class="ic">🏦</span><span>Transf.</span></button>
+      </div>
+      <label>Observações</label>
+      <textarea id="obs" placeholder="Ex: entregar depois das 15h, portão vermelho..."></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="resumo-card">
+      <div style="font-size:13px;font-weight:800;margin-bottom:8px">🧾 Resumo do Pedido</div>
+      <div id="resumo-linhas"><div class="vazio">Nenhum item seleccionado</div></div>
+      <div class="rs-total" id="rs-total-box" style="display:none"><span>TOTAL</span><span id="rs-total">MT 0</span></div>
+    </div>
+    <button class="btn-confirm" id="btn-confirm" onclick="confirmarPedido()">📱 CONFIRMAR PEDIDO</button>
+    <div style="text-align:center;font-size:10px;color:#888;margin-top:10px;padding:0 10px">Ao confirmar, será enviada uma mensagem de WhatsApp para a AgriVale com os detalhes do seu pedido.</div>
+  </div>
+
+</div>
+
+<div id="sucesso-screen" style="display:none">
+  <div class="section">
+    <div class="card">
+      <div class="sucesso">
+        <div class="check">✅</div>
+        <h2>Pedido Enviado!</h2>
+        <p>O seu pedido foi recebido com sucesso. Vamos contactá-lo em breve para confirmar.</p>
+        <div class="num-pedido">Pedido Nº <b id="num-pedido-out">—</b></div>
+        <button class="btn-wpp" onclick="abrirWhatsApp()">📱 Enviar detalhes por WhatsApp</button>
+        <button class="btn-novo" onclick="novoPedido()">🔄 Fazer Novo Pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="msg-float" id="msg-float"></div>
+
+<script>
+firebase.initializeApp({ databaseURL: "https://agrivale-2026-default-rtdb.firebaseio.com" });
+var db = firebase.database();
+
+var WHATSAPP_NEGOCIO = '258874332002';
+
+var UNIDS_POR_FAVO = 30;
+var config = { 
+  preco_pp:15, preco_gp:25, preco_pu:0.5, preco_gu:1, 
+  precos_tipo:null, pontos:[],
+  reserva_sinal_perc:30,
+  reserva_min_horas:24,
+  reserva_max_dias:30
+};
+var tipoEntrega = 'entrega';
+var tipoPedido = 'imediato';
+var pontoSelecionado = null;
+var metodoPagPedido = 'dinheiro';
+var ultimoPedidoTexto = '';
+var clientesPublicos = [];
+
+function fmt(n){ return 'MT ' + (Number(n)||0).toFixed(2); }
+function hoje(){ return new Date().toLocaleDateString('pt-BR'); }
+
+function getPreco(prod, tipoCli){
+  var tipo = tipoCli || 'individual';
+  if(config.precos_tipo && config.precos_tipo[tipo] && config.precos_tipo[tipo][prod] !== undefined){
+    return Number(config.precos_tipo[tipo][prod]) || 0;
+  }
+  return Number(config['preco_' + prod]) || 0;
+}
+
+function showMsg(txt, tipo){
+  var el = document.getElementById('msg-float');
+  el.textContent = txt;
+  el.className = 'msg-float ' + tipo;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 3000);
+}
+
+db.ref('config').on('value', function(snap){
+  if(snap.exists()) config = Object.assign({}, config, snap.val());
+  atualizarPrecos();
+  renderPontosPedido();
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('form-screen').style.display = 'block';
+});
+db.ref('clientes').on('value', function(snap){
+  clientesPublicos = snap.exists() ? Object.values(snap.val()) : [];
+});
+
+function getTipoCliente(){
+  var cod = document.getElementById('cli-codigo').value.trim().toUpperCase();
+  if(cod){
+    var c = clientesPublicos.find(function(x){ return (x.codigo || '').toUpperCase() === cod; });
+    if(c) return c.tipo || 'individual';
+  }
+  return 'individual';
+}
+
+function atualizarPrecos(){
+  var tipo = getTipoCliente();
+  ['pp','gp','pu','gu'].forEach(function(p){
+    var el = document.getElementById('p-' + p);
+    if(el) el.textContent = fmt(getPreco(p, tipo));
+  });
+  atualizarResumo();
+}
+
+function renderPontosPedido(){
+  var el = document.getElementById('lista-pontos-pedido');
+  var pontos = config.pontos || [];
+  if(pontos.length === 0){ el.innerHTML = '<div style="text-align:center;color:#aaa;padding:12px;font-size:12px">Sem pontos configurados</div>'; return; }
+  var icones = ['🏪','🏬','🛒','🏢'];
+  el.innerHTML = pontos.map(function(p, i){
+    var safe = String(p || '').replace(/"/g,'&quot;');
+    var ativo = pontoSelecionado === p ? ' active' : '';
+    return '<div class="ponto-option' + ativo + '" data-ponto="' + safe + '" onclick="selecionarPontoPedido(this.dataset.ponto)">' +
+      '<span class="ic">' + icones[i % icones.length] + '</span><span class="nm">' + p + '</span></div>';
+  }).join('');
+}
+function selecionarPontoPedido(nome){ pontoSelecionado = nome; renderPontosPedido(); }
+
+function incQtd(p){ var i = document.getElementById('q-' + p); i.value = (parseInt(i.value)||0) + 1; atualizarResumo(); }
+function decQtd(p){ var i = document.getElementById('q-' + p); var v = (parseInt(i.value)||0) - 1; i.value = v < 0 ? 0 : v; atualizarResumo(); }
+function getQtd(p){ return parseInt(document.getElementById('q-' + p).value) || 0; }
+
+function atualizarResumo(){
+  var el = document.getElementById('resumo-linhas');
+  var totBox = document.getElementById('rs-total-box');
+  var btn = document.getElementById('btn-confirm');
+  var itens = [], total = 0;
+  var nomes = {pp:'🥚📦 Favo Peq.', gp:'🪺📦 Favo Gra.', pu:'🥚1️⃣ Unid. Peq.', gu:'🪺1️⃣ Unid. Gra.'};
+  var tipo = getTipoCliente();
+  ['pp','gp','pu','gu'].forEach(function(p){
+    var q = getQtd(p);
+    if(q > 0){
+      var preco = getPreco(p, tipo);
+      var sub = q * preco;
+      total += sub;
+      itens.push({nome:nomes[p], q:q, preco:preco, sub:sub, prod:p});
+    }
+  });
+  if(itens.length === 0){ el.innerHTML = '<div class="vazio">Nenhum item seleccionado</div>'; totBox.style.display = 'none'; btn.disabled = true; return; }
+  el.innerHTML = itens.map(function(i){ return '<div class="rs-linha"><span>' + i.nome + ' × ' + i.q + '</span><span>' + fmt(i.sub) + '</span></div>'; }).join('');
+  document.getElementById('rs-total').textContent = fmt(total);
+  totBox.style.display = 'flex';
+  btn.disabled = false;
+  atualizarSinal();
+}
+
+function setTipoEntrega(t){
+  tipoEntrega = t;
+  document.getElementById('bt-entrega').className = 'entrega-btn' + (t === 'entrega' ? ' active-entrega' : '');
+  document.getElementById('bt-levant').className = 'entrega-btn' + (t === 'levantamento' ? ' active-levant' : '');
+  document.getElementById('sec-entrega').style.display = t === 'entrega' ? 'block' : 'none';
+  document.getElementById('sec-levant').style.display = t === 'levantamento' ? 'block' : 'none';
+}
+function setPagPedido(m){
+  metodoPagPedido = m;
+  var btns = document.querySelectorAll('.pag-btn-p');
+  for(var i=0; i<btns.length; i++){ btns[i].className = 'pag-btn-p' + (btns[i].dataset.pag === m ? ' active' : ''); }
+}
+
+function setTipoPedido(t){
+  tipoPedido = t;
+  document.getElementById('bt-imed').className = 'tipo-ped-btn' + (t === 'imediato' ? ' active-imed' : '');
+  document.getElementById('bt-res').className = 'tipo-ped-btn' + (t === 'reserva' ? ' active-res' : '');
+  document.getElementById('reserva-box').className = 'reserva-box' + (t === 'reserva' ? ' active' : '');
+  if(t === 'reserva'){
+    var hoje = new Date();
+    var min = new Date(hoje.getTime() + (config.reserva_min_horas||24)*3600*1000);
+    var max = new Date(hoje.getTime() + (config.reserva_max_dias||30)*24*3600*1000);
+    var fmt = function(d){
+      var m = (d.getMonth()+1).toString().padStart(2,'0');
+      var dd = d.getDate().toString().padStart(2,'0');
+      return d.getFullYear()+'-'+m+'-'+dd;
+    };
+    var inp = document.getElementById('res-data');
+    inp.min = fmt(min);
+    inp.max = fmt(max);
+    document.getElementById('res-aviso').textContent = 'Entre ' + min.toLocaleDateString('pt-BR') + ' e ' + max.toLocaleDateString('pt-BR');
+  }
+  atualizarSinal();
+}
+
+function atualizarSinal(){
+  var info = document.getElementById('sinal-info');
+  if(tipoPedido !== 'reserva' || !info){ if(info) info.style.display = 'none'; return; }
+  var total = 0;
+  var tipo = getTipoCliente();
+  ['pp','gp','pu','gu'].forEach(function(p){ total += getQtd(p) * getPreco(p, tipo); });
+  if(total <= 0){ info.style.display = 'none'; return; }
+  var perc = config.reserva_sinal_perc || 30;
+  var sinal = total * perc / 100;
+  document.getElementById('sinal-perc').textContent = perc + '%';
+  document.getElementById('sinal-valor').textContent = fmt(sinal);
+  info.style.display = 'block';
+}
+
+function confirmarPedido(){
+  var nome = document.getElementById('cli-nome').value.trim();
+  var tel = document.getElementById('cli-tel').value.trim();
+  var codigo = document.getElementById('cli-codigo').value.trim().toUpperCase();
+  var morada = document.getElementById('morada').value.trim();
+  var obs = document.getElementById('obs').value.trim();
+  if(!nome){ showMsg('❌ Informe o seu nome','erro'); document.getElementById('cli-nome').focus(); return; }
+  if(!tel){ showMsg('❌ Informe o telefone','erro'); document.getElementById('cli-tel').focus(); return; }
+  if(tipoEntrega === 'entrega' && !morada){ showMsg('❌ Informe a morada','erro'); return; }
+  if(tipoEntrega === 'levantamento' && !pontoSelecionado){ showMsg('❌ Escolha o ponto','erro'); return; }
+
+  // Validar reserva
+  var dataReserva = '', horaReserva = '';
+  if(tipoPedido === 'reserva'){
+    dataReserva = document.getElementById('res-data').value;
+    horaReserva = document.getElementById('res-hora').value;
+    if(!dataReserva){ showMsg('❌ Escolha a data da reserva','erro'); return; }
+    if(!horaReserva){ showMsg('❌ Escolha a hora da reserva','erro'); return; }
+    var dtRes = new Date(dataReserva + 'T' + horaReserva);
+    var minDt = new Date(Date.now() + (config.reserva_min_horas||24)*3600*1000);
+    if(dtRes < minDt){
+      showMsg('❌ A reserva precisa de pelo menos ' + (config.reserva_min_horas||24) + 'h de antecedência','erro');
+      return;
+    }
+  }
+
+  var itens = [], total = 0, totalFavos = 0, totalUnids = 0;
+  var nomes = {pp:'Favo Pequeno', gp:'Favo Grande', pu:'Unidade Pequena', gu:'Unidade Grande'};
+  var tipo = getTipoCliente();
+  ['pp','gp','pu','gu'].forEach(function(p){
+    var q = getQtd(p);
+    if(q > 0){
+      var preco = getPreco(p, tipo);
+      itens.push({produto:p, nome:nomes[p], qtd:q, preco:preco, valor:q*preco, formato:(p==='pp'||p==='gp')?'favo':'unidade'});
+      total += q * preco;
+      if(p==='pp'||p==='gp') totalFavos += q; else totalUnids += q;
+    }
+  });
+  if(itens.length === 0){ showMsg('❌ Adicione pelo menos 1 produto','erro'); return; }
+
+  var agora = new Date();
+  var prefixo = tipoPedido === 'reserva' ? '#R' : '#';
+  var numPedido = prefixo + agora.getTime().toString().slice(-6);
+  var sinalPerc = config.reserva_sinal_perc || 30;
+  var sinalVal = tipoPedido === 'reserva' ? (total * sinalPerc / 100) : 0;
+
+  var pedido = {
+    numero: numPedido,
+    data: hoje(),
+    hora: agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    timestamp: agora.getTime(),
+    cliente: {nome:nome, tel:tel, codigo:codigo},
+    tipo_cliente: tipo,
+    itens: itens, total: total, totalFavos: totalFavos, totalUnids: totalUnids,
+    tipo_entrega: tipoEntrega,
+    morada: tipoEntrega === 'entrega' ? morada : '',
+    ponto: tipoEntrega === 'levantamento' ? pontoSelecionado : '',
+    pagamento: metodoPagPedido,
+    observacoes: obs,
+    status: 'pendente',
+    tipo_pedido: tipoPedido
+  };
+
+  if(tipoPedido === 'reserva'){
+    pedido.data_reserva = dataReserva;
+    pedido.hora_reserva = horaReserva;
+    pedido.sinal_perc = sinalPerc;
+    pedido.sinal_valor = sinalVal;
+    pedido.sinal_pago = false;
+  }
+
+  var btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.textContent = '⏳ A enviar...';
+
+  db.ref('pedidos').push(pedido, function(err){
+    if(err){
+      btn.disabled = false; btn.textContent = '📱 CONFIRMAR PEDIDO';
+      showMsg('❌ Erro. Tente novamente.','erro'); return;
+    }
+    ultimoPedidoTexto = gerarTextoWhatsApp(pedido);
+    document.getElementById('form-screen').style.display = 'none';
+    document.getElementById('sucesso-screen').style.display = 'block';
+    document.getElementById('num-pedido-out').textContent = numPedido;
+    window.scrollTo(0, 0);
+  });
+}
+
+function gerarTextoWhatsApp(pedido){
+  var pagNomes = {dinheiro:'💵 Dinheiro', mpesa:'📱 M-Pesa', emola:'📲 E-mola', transf:'🏦 Transferência'};
+  var ehReserva = pedido.tipo_pedido === 'reserva';
+  var txt = '🌾 *' + (ehReserva?'NOVA RESERVA':'NOVO PEDIDO') + ' — AGRIVALE*\n';
+  txt += '━━━━━━━━━━━━━━━\n';
+  txt += '📋 ' + (ehReserva?'Reserva':'Pedido') + ': *' + pedido.numero + '*\n';
+  txt += '📅 ' + pedido.data + ' ' + pedido.hora + '\n';
+  if(ehReserva){
+    var dt = new Date(pedido.data_reserva + 'T' + pedido.hora_reserva);
+    txt += '🗓️ *Para: ' + dt.toLocaleDateString('pt-BR') + ' às ' + pedido.hora_reserva + '*\n';
+  }
+  txt += '━━━━━━━━━━━━━━━\n';
+  txt += '👤 *Cliente:*\n';
+  txt += 'Nome: ' + pedido.cliente.nome + '\n';
+  txt += 'Tel: ' + pedido.cliente.tel + '\n';
+  if(pedido.cliente.codigo) txt += 'Código: ' + pedido.cliente.codigo + '\n';
+  txt += '━━━━━━━━━━━━━━━\n';
+  txt += '📦 *Produtos:*\n';
+  pedido.itens.forEach(function(i){
+    txt += '• ' + i.nome + ' × ' + i.qtd + (i.formato==='favo'?' favo(s)':' un') + ' = ' + fmt(i.valor) + '\n';
+  });
+  txt += '━━━━━━━━━━━━━━━\n';
+  txt += '💰 *Total: ' + fmt(pedido.total) + '*\n';
+  if(ehReserva){
+    txt += '💵 *Sinal (' + pedido.sinal_perc + '%): ' + fmt(pedido.sinal_valor) + '*\n';
+    txt += '💸 Resto: ' + fmt(pedido.total - pedido.sinal_valor) + ' (na entrega)\n';
+  }
+  txt += '💳 Pagamento: ' + (pagNomes[pedido.pagamento] || pedido.pagamento) + '\n';
+  txt += '━━━━━━━━━━━━━━━\n';
+  if(pedido.tipo_entrega === 'entrega'){
+    txt += '🚚 *Entrega ao domicílio*\n📍 Morada: ' + pedido.morada + '\n';
+  } else {
+    txt += '🏪 *Levantamento*\n📍 Ponto: ' + pedido.ponto + '\n';
+  }
+  if(pedido.observacoes){ txt += '━━━━━━━━━━━━━━━\n💬 Obs: ' + pedido.observacoes + '\n'; }
+  txt += '━━━━━━━━━━━━━━━\n';
+  txt += ehReserva ? 'Aguardo confirmação e instruções para o pagamento do sinal. Obrigado! 🙏' : 'Aguardo a confirmação. Obrigado! 🙏';
+  return txt;
+}
+
+function abrirWhatsApp(){
+  window.open('https://api.whatsapp.com/send?phone=' + WHATSAPP_NEGOCIO + '&text=' + encodeURIComponent(ultimoPedidoTexto), '_blank');
+}
+
+function novoPedido(){
+  ['q-pp','q-gp','q-pu','q-gu'].forEach(function(id){ document.getElementById(id).value = 0; });
+  document.getElementById('cli-nome').value = '';
+  document.getElementById('cli-tel').value = '';
+  document.getElementById('cli-codigo').value = '';
+  document.getElementById('morada').value = '';
+  document.getElementById('obs').value = '';
+  document.getElementById('res-data').value = '';
+  document.getElementById('res-hora').value = '';
+  setTipoEntrega('entrega');
+  setTipoPedido('imediato');
+  setPagPedido('dinheiro');
+  pontoSelecionado = null;
+  renderPontosPedido();
+  atualizarResumo();
+  document.getElementById('sucesso-screen').style.display = 'none';
+  document.getElementById('form-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+// Recalcula preços quando código mudar
+document.addEventListener('DOMContentLoaded', function(){
+  var cod = document.getElementById('cli-codigo');
+  if(cod) cod.addEventListener('input', atualizarPrecos);
+});
+
+setTimeout(function(){
+  if(document.getElementById('loading-screen').style.display !== 'none'){
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('form-screen').style.display = 'block';
+    atualizarPrecos();
+    renderPontosPedido();
+  }
+}, 4000);
+</script>
+</body>
+</html>
