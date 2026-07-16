@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Gestão - Reservas</title>
+<style>
+  :root{
+    --bg: #FBF8F1;
+    --ink: #2B2118;
+    --green: #3F5B32;
+    --green-dark: #2C4023;
+    --yolk: #E3A93E;
+    --line: #DED4BE;
+    --danger: #A8402E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family: Arial, sans-serif;
+  }
+  .wrap{ max-width:720px; margin:0 auto; padding:24px 18px 60px; }
+  header{
+    text-align:center;
+    padding:10px 0 18px;
+    border-bottom:2px solid var(--green);
+    margin-bottom:22px;
+  }
+  h1{ font-size:20px; margin:0; color:var(--green-dark); }
+
+  #loginBox{
+    max-width:320px; margin:60px auto; background:white;
+    border:1px solid var(--line); border-radius:10px; padding:24px; text-align:center;
+  }
+  #loginBox input{
+    width:100%; padding:12px; font-size:18px; text-align:center;
+    letter-spacing:4px; border:1px solid var(--line); border-radius:8px; margin:14px 0;
+  }
+  #loginBox button{
+    width:100%; padding:12px; background:var(--green); color:white; border:none;
+    border-radius:8px; font-weight:bold; cursor:pointer;
+  }
+  #loginErr{ color:var(--danger); font-size:13px; min-height:16px; }
+
+  #app{ display:none; }
+
+  .card{
+    background:white; border:1px solid var(--line); border-radius:10px;
+    padding:18px; margin-bottom:20px;
+  }
+  .card h2{ font-size:15px; margin:0 0 12px; color:var(--green-dark); }
+  .stock-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .field{ flex:1; min-width:120px; }
+  .field label{ display:block; font-size:12px; font-weight:bold; margin-bottom:5px; color:#6b5e4a; }
+  .field input{
+    width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; font-size:15px;
+  }
+  .card button.save{
+    background:var(--green); color:white; border:none; border-radius:6px;
+    padding:10px 16px; font-weight:bold; cursor:pointer; margin-top:12px;
+  }
+  .save-msg{ font-size:13px; margin-top:8px; color:var(--green-dark); min-height:16px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th, td{ padding:9px 6px; text-align:left; border-bottom:1px solid var(--line); }
+  th{ color:#6b5e4a; font-size:11px; text-transform:uppercase; }
+  .status{
+    display:inline-block; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:bold;
+  }
+  .status.pendente{ background:#FBEBD2; color:#8a5a1a; }
+  .status.confirmada{ background:#E9F1E4; color:var(--green-dark); }
+  .status.cancelada{ background:#F6E5E1; color:var(--danger); }
+  .status.entregue{ background:#DDE7F5; color:#2C4E7A; }
+  select{
+    font-size:12px; padding:4px; border-radius:6px; border:1px solid var(--line);
+  }
+  .empty{ color:#9a8d75; font-size:13px; padding:12px 0; }
+  .summary{ font-size:13px; color:#6b5e4a; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Painel de Gestão &middot; Reservas de Ovos</h1></header>
+
+  <div id="loginBox">
+    <p>Introduza o PIN de gestor</p>
+    <input type="password" id="pin" inputmode="numeric" maxlength="6" placeholder="••••">
+    <button id="loginBtn">Entrar</button>
+    <div id="loginErr"></div>
+  </div>
+
+  <div id="app">
+    <div class="card">
+      <h2>Stock desta semana</h2>
+      <div class="stock-row">
+        <div class="field">
+          <label>Favos disponíveis</label>
+          <input type="number" id="favos" min="0">
+        </div>
+        <div class="field">
+          <label>Preço por favo (MZN)</label>
+          <input type="number" id="preco" min="0">
+        </div>
+      </div>
+      <button class="save" id="saveStock">Guardar stock</button>
+      <div class="save-msg" id="stockMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Reservas</h2>
+      <div class="summary" id="summary"></div>
+      <table>
+        <thead>
+          <tr><th>Cliente</th><th>Telefone</th><th>Qtd</th><th>Estado</th></tr>
+        </thead>
+        <tbody id="resTable"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none;">Ainda não há reservas.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, collection,
+    onSnapshot, updateDoc, increment, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- Login (PIN local, protege apenas a interface; ver README sobre regras Firestore) ---
+  const GESTOR_PIN = "1234"; // ALTERE este PIN antes de publicar
+
+  document.getElementById('loginBtn').onclick = () => {
+    const pin = document.getElementById('pin').value;
+    if (pin === GESTOR_PIN) {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initApp();
+    } else {
+      document.getElementById('loginErr').textContent = 'PIN incorreto.';
+    }
+  };
+
+  function initApp() {
+    const stockRef = doc(db, "config", "stock");
+
+    getDoc(stockRef).then(snap => {
+      if (snap.exists()) {
+        document.getElementById('favos').value = snap.data().favosDisponiveis ?? 0;
+        document.getElementById('preco').value = snap.data().precoPorFavo ?? 0;
+      }
+    });
+
+    document.getElementById('saveStock').onclick = async () => {
+      const favos = Number(document.getElementById('favos').value) || 0;
+      const preco = Number(document.getElementById('preco').value) || 0;
+      await setDoc(stockRef, { favosDisponiveis: favos, precoPorFavo: preco }, { merge: true });
+      document.getElementById('stockMsg').textContent = 'Stock atualizado.';
+      setTimeout(() => document.getElementById('stockMsg').textContent = '', 2000);
+    };
+
+    const q = query(collection(db, "reservas"), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snapshot) => {
+      const tbody = document.getElementById('resTable');
+      tbody.innerHTML = '';
+      let totalFavos = 0, pendentes = 0;
+
+      if (snapshot.empty) {
+        document.getElementById('emptyMsg').style.display = 'block';
+      } else {
+        document.getElementById('emptyMsg').style.display = 'none';
+      }
+
+      snapshot.forEach(docSnap => {
+        const r = docSnap.data();
+        totalFavos += r.quantidade || 0;
+        if (r.status === 'pendente') pendentes++;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(r.nome || '')}</td>
+          <td>${escapeHtml(r.telefone || '')}</td>
+          <td>${r.quantidade || 0}</td>
+          <td>
+            <select data-id="${docSnap.id}">
+              <option value="pendente" ${r.status==='pendente'?'selected':''}>Pendente</option>
+              <option value="confirmada" ${r.status==='confirmada'?'selected':''}>Confirmada</option>
+              <option value="entregue" ${r.status==='entregue'?'selected':''}>Entregue</option>
+              <option value="cancelada" ${r.status==='cancelada'?'selected':''}>Cancelada</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('summary').textContent =
+        `${snapshot.size} reserva(s) · ${totalFavos} favo(s) reservados · ${pendentes} pendente(s)`;
+
+      tbody.querySelectorAll('select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+          const id = e.target.getAttribute('data-id');
+          await updateDoc(doc(db, "reservas", id), { status: e.target.value });
+        });
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+</script>
+</body>
+</html>
