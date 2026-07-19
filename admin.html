@@ -155,7 +155,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore, doc, getDoc, setDoc, collection,
-    onSnapshot, updateDoc, query, orderBy
+    onSnapshot, updateDoc, query, orderBy, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { firebaseConfig } from "./firebase-config.js";
 
@@ -305,8 +305,34 @@
       list.querySelectorAll('select.status').forEach(sel => {
         sel.addEventListener('change', async (e) => {
           const id = e.target.getAttribute('data-id');
-          await updateDoc(doc(db, "reservas", id), { status: e.target.value });
-          e.target.className = 'status ' + e.target.value;
+          const novoStatus = e.target.value;
+          const reserva = todasReservas.find(r => r.id === id);
+          const statusAnterior = reserva ? reserva.status : null;
+          const quantidade = reserva ? (reserva.quantidade || 0) : 0;
+
+          try {
+            await runTransaction(db, async (transaction) => {
+              const stockSnap = await transaction.get(stockRef);
+              const disponivelAtual = stockSnap.exists() ? (stockSnap.data().favosDisponiveis || 0) : 0;
+
+              // Cancelou uma reserva que não estava cancelada antes -> devolve o stock
+              if (novoStatus === 'cancelada' && statusAnterior !== 'cancelada') {
+                transaction.update(stockRef, { favosDisponiveis: disponivelAtual + quantidade });
+              }
+              // Reativou uma reserva que estava cancelada -> volta a descontar do stock
+              if (statusAnterior === 'cancelada' && novoStatus !== 'cancelada') {
+                if (quantidade > disponivelAtual) {
+                  throw new Error(`Só há ${disponivelAtual} favo(s) disponível(is) para reativar esta reserva.`);
+                }
+                transaction.update(stockRef, { favosDisponiveis: disponivelAtual - quantidade });
+              }
+              transaction.update(doc(db, "reservas", id), { status: novoStatus });
+            });
+            e.target.className = 'status ' + novoStatus;
+          } catch (err) {
+            alert(err.message || 'Erro ao atualizar reserva.');
+            e.target.value = statusAnterior;
+          }
         });
       });
     }
