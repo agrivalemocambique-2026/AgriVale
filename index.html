@@ -83,7 +83,7 @@
 <body>
 <header>
   <div class="logo"><img src="logo.png" alt="AgriVale"></div>
-  <h1>AgriVale</h1>
+  <h1>AgriVale Moçambique <br>Grupo Agroindustrial</h1>
   <p>Reserva de ovos &middot; produção própria</p>
 </header>
 
@@ -326,7 +326,7 @@
     try {
       const resultado = await comLimiteDeTempo(runTransaction(db, async (transaction) => {
         const stockSnap = await transaction.get(stockRef);
-        if (!stockSnap.exists()) throw new Error('Stock não configurado. Contacta o gestor antes de reservar.');
+        if (!stockSnap.exists()) throw new Error('Stock não configurado. Contacta o gestor antes de reservar pelo número 870689505.');
         const disponivel = stockSnap.data().favosDisponiveis ?? 0;
         const cabeNoStock = quantidade <= disponivel;
 
