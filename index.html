@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="theme-color" content="#14532d">
+<title>AgriVale - Reservar Ovos</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Segoe UI',sans-serif;background:#f8fafc;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:60px;}
+  button,input,select,textarea{font-family:inherit;}
+
+  header{
+    background:linear-gradient(135deg,#14532d,#166534);
+    padding:20px 20px 26px;color:#fff;text-align:center;
+    border-radius:0 0 18px 18px;box-shadow:0 6px 20px rgba(20,83,45,.25);
+  }
+  header .logo{width:60px;height:60px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;padding:6px;}
+  header .logo img{width:100%;height:100%;object-fit:contain;}
+  header h1{font-size:19px;font-weight:800;letter-spacing:.3px;}
+  header p{font-size:12px;opacity:.85;margin-top:4px;}
+
+  .wrap{padding:16px 16px 0;}
+
+  .stock-card{
+    background:linear-gradient(135deg,#14532d,#15803d);border-radius:14px;padding:16px 18px;color:#fff;
+    margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;
+  }
+  .stock-card .num{font-size:30px;font-weight:900;}
+  .stock-card .lbl{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;}
+  .stock-card .price{font-size:13px;opacity:.9;text-align:right;}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:6px;}
+  .badge.ok{background:rgba(34,197,94,.3);color:#dcfce7;}
+  .badge.no{background:rgba(239,68,68,.3);color:#fee2e2;}
+
+  .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:14px;}
+  .card-title{font-size:13px;font-weight:800;color:#14532d;margin-bottom:12px;text-transform:uppercase;letter-spacing:.4px;}
+
+  label{display:block;font-size:12px;font-weight:700;color:#166534;margin:12px 0 5px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text],input[type=tel],input[type=number],input[type=date],input[type=time],select{
+    width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:15px;background:#f8fafc;
+  }
+  input:focus,select:focus{outline:none;border-color:#16a34a;background:#fff;}
+
+  .qty-row{display:flex;align-items:center;gap:8px;}
+  .qty-row button{width:42px;height:42px;border-radius:9px;border:1.5px solid #16a34a;background:#f0fdf4;color:#14532d;font-size:20px;font-weight:700;cursor:pointer;}
+  .qty-row input{text-align:center;flex:1;}
+
+  .toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+  .toggle label.opt{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:9px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;margin:0;text-align:center;}
+  .toggle input{display:none;}
+  .toggle label.opt:has(input:checked){border-color:#16a34a;background:#f0fdf4;color:#14532d;}
+
+  .hidden{display:none;}
+
+  .resumo{background:#f0fdf4;border:1.5px solid #16a34a;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#14532d;}
+  .resumo .row{display:flex;justify-content:space-between;margin-bottom:4px;}
+  .resumo .total{font-weight:800;font-size:15px;border-top:1px dashed #16a34a;padding-top:6px;margin-top:6px;}
+  .resumo .adiantamento{background:#fef3c7;border-radius:8px;padding:8px 10px;margin-top:8px;color:#92400e;font-weight:800;display:flex;justify-content:space-between;}
+  .aviso-espera{background:#e0e7ff;border-radius:8px;padding:9px 10px;margin-top:8px;color:#3730a3;font-size:12px;font-weight:600;line-height:1.4;}
+
+  .pagamento-info{background:#eff6ff;border:1.5px solid #60a5fa;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12.5px;color:#1e40af;line-height:1.5;}
+  .pagamento-info b{color:#1e3a8a;}
+
+  button[type=submit]{width:100%;margin-top:16px;padding:15px;background:#166534;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px;}
+  button[type=submit]:disabled{background:#94a3b8;}
+
+  .msg{margin-top:12px;padding:12px;border-radius:9px;font-size:13px;display:none;}
+  .msg.err{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;display:block;}
+  .hint{font-size:11px;color:#94a3b8;margin-top:4px;}
+
+  .sucesso{display:none;text-align:center;padding:10px;}
+  .sucesso .check{font-size:44px;margin-bottom:6px;}
+  .sucesso h2{color:#14532d;font-size:17px;margin-bottom:4px;}
+  .sucesso .codigo{background:#14532d;color:#fff;font-size:22px;font-weight:900;letter-spacing:1px;padding:10px 18px;border-radius:10px;display:inline-block;margin:10px 0;}
+  .sucesso p{font-size:13px;color:#475569;margin-bottom:4px;}
+  .sucesso button{width:100%;margin-top:14px;padding:12px;background:#f0fdf4;border:1.5px solid #16a34a;color:#166534;border-radius:9px;font-weight:700;cursor:pointer;}
+
+  footer{text-align:center;padding:20px;font-size:11px;color:#94a3b8;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><img src="logo.png" alt="AgriVale"></div>
+  <h1>AgriVale</h1>
+  <p>Reserva de ovos &middot; produção própria</p>
+</header>
+
+<div class="wrap">
+  <div class="stock-card">
+    <div><div class="num" id="stockNum">—</div><div class="lbl">favos disponíveis</div><span class="badge" id="stockBadge"></span></div>
+    <div class="price" id="stockPrice"></div>
+  </div>
+
+  <form id="resForm">
+    <div class="card">
+      <div class="card-title">Os teus dados</div>
+      <label for="nome">Nome completo</label>
+      <input type="text" id="nome" required placeholder="Ex: Maria Chissano">
+
+      <label for="telefone">Telefone</label>
+      <input type="tel" id="telefone" required placeholder="Ex: 84xxxxxxx">
+
+      <label for="qtd">Quantidade de favos</label>
+      <div class="qty-row">
+        <button type="button" id="minus">−</button>
+        <input type="number" id="qtd" min="1" value="1" required>
+        <button type="button" id="plus">+</button>
+      </div>
+      <p class="hint">1 favo = 30 ovos</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Como vais receber</div>
+      <div class="toggle">
+        <label class="opt"><input type="radio" name="entrega" value="domicilio" checked><span>🚚 Entrega ao domicílio</span></label>
+        <label class="opt"><input type="radio" name="entrega" value="levantamento"><span>🏠 Vou levantar</span></label>
+      </div>
+      <p class="hint" id="avisoTaxa">🚚 Entrega ao domicílio tem uma taxa extra a partir de 10 MT, consoante a zona.</p>
+
+      <div id="camposDomicilio">
+        <label for="endereco">Endereço</label>
+        <input type="text" id="endereco" placeholder="Rua, número, referência">
+
+        <label for="zona">Bairro / Zona</label>
+        <select id="zona"><option value="">A carregar zonas...</option></select>
+      </div>
+
+      <label for="data">Data desejada</label>
+      <input type="date" id="data" required>
+
+      <label for="hora">Hora aproximada</label>
+      <input type="time" id="hora" required>
+    </div>
+
+    <div class="resumo" id="resumo">
+      <div class="row"><span>Ovos (<span id="rQtd">1</span> favo)</span><span id="rSub">—</span></div>
+      <div class="row" id="rTaxaRow"><span>Taxa de entrega</span><span id="rTaxa">—</span></div>
+      <div class="row total"><span>Total estimado</span><span id="rTotal">—</span></div>
+      <div class="adiantamento"><span id="rAdiantLabel">Adiantamento necessário</span><span id="rAdiant">—</span></div>
+      <p class="aviso-espera" id="avisoEspera" style="display:none;">📋 Não há stock suficiente para esta quantidade agora. A tua reserva entra na <b>lista de espera</b> para o próximo lote — sem necessidade de adiantamento por agora. Vamos contactar-te assim que houver disponibilidade.</p>
+    </div>
+
+    <div class="pagamento-info" id="pagamentoInfo">A carregar instruções de pagamento...</div>
+
+    <div id="msg" class="msg"></div>
+    <button type="submit" id="submitBtn">Confirmar reserva</button>
+  </form>
+
+  <div class="sucesso" id="sucesso">
+    <div class="check">✅</div>
+    <h2>Reserva registada!</h2>
+    <p>O teu código de reserva é:</p>
+    <div class="codigo" id="codigoGerado">—</div>
+    <p id="sucessoPagamento"></p>
+    <p>Guarda este código — vais precisar dele para confirmarmos o teu pedido.</p>
+    <button id="novaReservaBtn">Fazer outra reserva</button>
+  </div>
+</div>
+
+<footer>AgriVale &middot; Produção própria de ovos &middot; Angónia, Tete</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    initializeFirestore, doc, getDoc, setDoc, collection,
+    runTransaction, serverTimestamp, increment
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+    useFetchStreams: false
+  });
+
+  function comLimiteDeTempo(promessa, segundos = 15) {
+    return Promise.race([
+      promessa,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Ligação lenta ou instável. Verifica a tua internet e tenta novamente.')), segundos * 1000))
+    ]);
+  }
+
+  // --- Referências Firestore ---
+  const stockRef = doc(db, "config", "stock");
+  const entregaRef = doc(db, "config", "entrega");
+  const pagamentoRef = doc(db, "config", "pagamento");
+  const contadorRef = doc(db, "config", "contador");
+
+  // --- Elementos ---
+  const stockNum = document.getElementById('stockNum');
+  const stockBadge = document.getElementById('stockBadge');
+  const stockPrice = document.getElementById('stockPrice');
+  const form = document.getElementById('resForm');
+  const sucesso = document.getElementById('sucesso');
+  const msg = document.getElementById('msg');
+  const submitBtn = document.getElementById('submitBtn');
+  const qtdInput = document.getElementById('qtd');
+  const zonaSelect = document.getElementById('zona');
+  const camposDomicilio = document.getElementById('camposDomicilio');
+  const pagamentoInfo = document.getElementById('pagamentoInfo');
+
+  let precoFavo = 0;
+  let stockAtual = 0;
+  let zonas = [];
+  let pagamentoConfig = { percentagem: 75, metodo: 'M-Pesa', numero: '', instrucoes: '' };
+
+  // --- Interações de quantidade ---
+  document.getElementById('plus').onclick = () => { qtdInput.value = Number(qtdInput.value) + 1; atualizarResumo(); };
+  document.getElementById('minus').onclick = () => { qtdInput.value = Math.max(1, Number(qtdInput.value) - 1); atualizarResumo(); };
+  qtdInput.addEventListener('input', atualizarResumo);
+  zonaSelect.addEventListener('change', atualizarResumo);
+
+  document.querySelectorAll('input[name=entrega]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isDomicilio = document.querySelector('input[name=entrega]:checked').value === 'domicilio';
+      camposDomicilio.classList.toggle('hidden', !isDomicilio);
+      document.getElementById('endereco').required = isDomicilio;
+      document.getElementById('avisoTaxa').style.display = isDomicilio ? 'block' : 'none';
+      atualizarResumo();
+    });
+  });
+
+  function atualizarResumo() {
+    const q = Number(qtdInput.value) || 0;
+    const isDomicilio = document.querySelector('input[name=entrega]:checked').value === 'domicilio';
+    const subtotal = q * precoFavo;
+    let taxa = 0;
+    document.getElementById('rTaxaRow').style.display = isDomicilio ? 'flex' : 'none';
+    if (isDomicilio) {
+      const zonaEscolhida = zonas.find(z => z.nome === zonaSelect.value);
+      taxa = zonaEscolhida ? Number(zonaEscolhida.taxa) : 0;
+    }
+    const total = subtotal + taxa;
+    const percentagem = pagamentoConfig.percentagem ?? 75;
+    const adiantamento = Math.ceil(total * percentagem / 100);
+    const entraEmEspera = q > stockAtual;
+
+    document.getElementById('rQtd').textContent = q;
+    document.getElementById('rSub').textContent = subtotal ? `${subtotal} MZN` : '—';
+    document.getElementById('rTaxa').textContent = isDomicilio ? `${taxa} MZN` : '—';
+    document.getElementById('rTotal').textContent = `${total} MZN`;
+    document.getElementById('rAdiantLabel').textContent = `Adiantamento necessário (${percentagem}%)`;
+    document.getElementById('rAdiant').textContent = `${adiantamento} MZN`;
+
+    document.getElementById('rAdiant').parentElement.style.display = entraEmEspera ? 'none' : 'flex';
+    document.getElementById('avisoEspera').style.display = entraEmEspera ? 'block' : 'none';
+  }
+
+  function renderPagamentoInfo() {
+    const p = pagamentoConfig;
+    const metodoTxt = p.metodo || 'M-Pesa/e-Mola';
+    const numeroTxt = p.numero ? ` para o número <b>${p.numero}</b>` : '';
+    pagamentoInfo.innerHTML = `📌 Para confirmarmos a tua reserva, envia o adiantamento (<b>${p.percentagem ?? 75}%</b> do total) via <b>${metodoTxt}</b>${numeroTxt}, e envia o comprovativo por WhatsApp com o código da tua reserva.${p.instrucoes ? '<br>' + p.instrucoes : ''}`;
+  }
+
+  async function carregarStock() {
+    const snap = await getDoc(stockRef);
+    if (snap.exists()) {
+      const d = snap.data();
+      stockAtual = d.favosDisponiveis ?? 0;
+      precoFavo = d.precoPorFavo ?? 0;
+      stockNum.textContent = stockAtual;
+      stockPrice.textContent = precoFavo ? `${precoFavo} MZN por favo` : '';
+      const esgotado = stockAtual <= 0;
+      stockBadge.textContent = esgotado ? 'Esgotado' : 'Disponível';
+      stockBadge.className = 'badge ' + (esgotado ? 'no' : 'ok');
+    } else {
+      stockAtual = 0;
+      stockNum.textContent = '0';
+      showMsg('Ainda não há stock configurado. Contacta o gestor antes de reservar.', 'err');
+    }
+    atualizarResumo();
+  }
+
+  async function carregarZonas() {
+    const snap = await getDoc(entregaRef);
+    zonas = snap.exists() ? (snap.data().zonas || []) : [];
+    zonaSelect.innerHTML = zonas.length
+      ? '<option value="">Escolhe a tua zona</option>' + zonas.map(z => `<option value="${z.nome}">${z.nome} (+${z.taxa} MZN)</option>`).join('')
+      : '<option value="">Sem zonas configuradas</option>';
+  }
+
+  async function carregarPagamento() {
+    const snap = await getDoc(pagamentoRef);
+    if (snap.exists()) pagamentoConfig = { ...pagamentoConfig, ...snap.data() };
+    renderPagamentoInfo();
+  }
+
+  function showMsg(text, type) { msg.textContent = text; msg.className = 'msg ' + type; }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    showMsg('', '');
+    msg.style.display = 'none';
+
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    const quantidade = Number(qtdInput.value);
+    const tipoEntrega = document.querySelector('input[name=entrega]:checked').value;
+    const endereco = document.getElementById('endereco').value.trim();
+    const zona = zonaSelect.value;
+    const data = document.getElementById('data').value;
+    const hora = document.getElementById('hora').value;
+
+    if (!nome || !telefone || quantidade < 1 || !data || !hora) {
+      showMsg('Preencha todos os campos corretamente.', 'err');
+      submitBtn.disabled = false;
+      return;
+    }
+    if (tipoEntrega === 'domicilio' && (!endereco || !zona)) {
+      showMsg('Preencha o endereço e escolha a zona para entrega.', 'err');
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const zonaEscolhida = zonas.find(z => z.nome === zona);
+    const taxa = (tipoEntrega === 'domicilio' && zonaEscolhida) ? Number(zonaEscolhida.taxa) : 0;
+    const subtotal = quantidade * precoFavo;
+    const total = subtotal + taxa;
+    const percentagem = pagamentoConfig.percentagem ?? 75;
+    const adiantamento = Math.ceil(total * percentagem / 100);
+
+    try {
+      const resultado = await comLimiteDeTempo(runTransaction(db, async (transaction) => {
+        const stockSnap = await transaction.get(stockRef);
+        if (!stockSnap.exists()) throw new Error('Stock não configurado. Contacta o gestor antes de reservar.');
+        const disponivel = stockSnap.data().favosDisponiveis ?? 0;
+        const cabeNoStock = quantidade <= disponivel;
+
+        const contadorSnap = await transaction.get(contadorRef);
+        const ultimoNumero = contadorSnap.exists() ? (contadorSnap.data().ultimoNumero || 0) : 0;
+        const novoNumero = ultimoNumero + 1;
+        const codigo = (cabeNoStock ? 'RES-' : 'ESP-') + String(novoNumero).padStart(4, '0');
+
+        if (cabeNoStock) {
+          transaction.update(stockRef, { favosDisponiveis: disponivel - quantidade });
+        }
+        transaction.set(contadorRef, { ultimoNumero: novoNumero }, { merge: true });
+
+        const novaReservaRef = doc(collection(db, "reservas"));
+        transaction.set(novaReservaRef, {
+          codigo, nome, telefone, quantidade,
+          tipoEntrega, endereco: tipoEntrega === 'domicilio' ? endereco : '',
+          zona: tipoEntrega === 'domicilio' ? zona : '',
+          taxaEntrega: taxa, subtotal, totalEstimado: total,
+          percentagemAdiantamento: percentagem,
+          adiantamentoNecessario: cabeNoStock ? adiantamento : 0,
+          sinalConfirmado: false,
+          dataDesejada: data, horaDesejada: hora,
+          origem: 'online', status: cabeNoStock ? 'pendente' : 'lista_espera',
+          criadoEm: serverTimestamp()
+        });
+
+        return { codigo, cabeNoStock };
+      }));
+      const { codigo: codigoGerado, cabeNoStock } = resultado;
+
+      await comLimiteDeTempo(setDoc(doc(db, "clientes", telefone), {
+        nome, telefone,
+        totalReservas: increment(1),
+        totalFavos: increment(quantidade),
+        ultimaReserva: serverTimestamp()
+      }, { merge: true }));
+
+      document.getElementById('codigoGerado').textContent = codigoGerado;
+      document.getElementById('sucessoPagamento').innerHTML = cabeNoStock
+        ? `Adiantamento necessário: <b>${adiantamento} MZN</b> (${percentagem}% do total) via ${pagamentoConfig.metodo || 'M-Pesa/e-Mola'}${pagamentoConfig.numero ? ' — ' + pagamentoConfig.numero : ''}.`
+        : `📋 Ficaste na <b>lista de espera</b> — não há stock suficiente agora. Vamos contactar-te assim que houver disponibilidade, sem necessidade de pagamento adiantado por enquanto.`;
+      form.style.display = 'none';
+      sucesso.style.display = 'block';
+      await carregarStock();
+    } catch (err) {
+      showMsg(err.message || 'Erro ao reservar. Tente novamente.', 'err');
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('novaReservaBtn').onclick = () => {
+    form.reset();
+    qtdInput.value = 1;
+    camposDomicilio.classList.remove('hidden');
+    document.getElementById('avisoTaxa').style.display = 'block';
+    sucesso.style.display = 'none';
+    form.style.display = 'block';
+    submitBtn.disabled = false;
+    atualizarResumo();
+  };
+
+  (async function iniciar() {
+    await carregarStock();
+    await carregarZonas();
+    await carregarPagamento();
+    atualizarResumo();
+  })();
+</script>
+</body>
+</html>
