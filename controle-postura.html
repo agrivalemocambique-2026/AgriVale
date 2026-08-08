@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriVale — Controlo de Postura</title>
+<style>
+  :root {
+    --verde-escuro: #1E4620;
+    --verde-claro: #4A7C4E;
+    --dourado: #D4A017;
+    --dourado-claro: #F0C860;
+    --creme: #FDFBF5;
+    --terroso: #B33A3A;
+    --grafite: #333333;
+    --raio: 10px;
+    --sombra: 0 2px 10px rgba(30, 70, 32, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Segoe UI", sans-serif; background: var(--creme);
+    color: var(--grafite); line-height: 1.5; padding-bottom: 40px;
+  }
+  header {
+    background: var(--verde-escuro); color: white; padding: 18px 20px;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  header span { color: var(--dourado); }
+  header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+
+  .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+  .cartao {
+    background: white; border-radius: var(--raio); box-shadow: var(--sombra);
+    padding: 18px; margin-bottom: 18px;
+  }
+  .cartao h2 { margin-top: 0; font-size: 1.1rem; color: var(--verde-escuro); }
+
+  .campo { margin-bottom: 12px; }
+  .campo label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
+  .campo input, .campo textarea {
+    width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 1rem; min-height: 44px; font-family: inherit;
+  }
+  .linha-dupla { display: flex; gap: 10px; }
+  .linha-dupla .campo { flex: 1; }
+
+  button {
+    font-family: inherit; font-size: 1rem; border: none; border-radius: var(--raio);
+    padding: 13px; cursor: pointer; font-weight: 700;
+  }
+  .btn-principal { background: var(--dourado); color: var(--verde-escuro); width: 100%; }
+  .btn-principal:hover { background: var(--dourado-claro); }
+  .btn-secundario { background: transparent; border: 2px solid var(--verde-escuro); color: var(--verde-escuro); }
+  .btn-perigo { background: transparent; border: 1px solid var(--terroso); color: var(--terroso); padding: 6px 10px; font-size: 0.8rem; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .stat { background: white; border-radius: var(--raio); box-shadow: var(--sombra); padding: 14px 10px; text-align: center; }
+  .stat .valor { font-size: 1.5rem; font-weight: 700; color: var(--verde-escuro); }
+  .stat .rotulo { font-size: 0.72rem; color: #777; margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { background: var(--verde-escuro); color: white; padding: 8px; text-align: left; }
+  td { padding: 8px; border-bottom: 1px solid #eee; }
+  tr:hover { background: #FAF7EE; }
+  .obs { font-size: 0.78rem; color: #777; }
+
+  #grafico { width: 100%; height: 180px; }
+
+  .msg { padding: 10px 14px; border-radius: var(--raio); font-size: 0.88rem; margin-bottom: 12px; }
+  .msg.sucesso { background: #E8F1E6; border: 1px solid var(--verde-claro); }
+  .msg.aviso { background: #FBF1D9; border: 1px solid var(--dourado); }
+
+  .rodape-acoes { display: flex; gap: 10px; margin-top: 10px; }
+  .rodape-acoes button { flex: 1; }
+
+  .vazio { text-align: center; color: #999; padding: 20px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AgriVale <span>Postura</span></h1>
+  <p>Registo diário de ovos — Angónia, Tete</p>
+</header>
+
+<div class="container">
+
+  <div id="mensagem"></div>
+
+  <div class="cartao">
+    <h2>Registar hoje</h2>
+    <form id="formRegisto">
+      <div class="linha-dupla">
+        <div class="campo">
+          <label for="data">Data</label>
+          <input type="date" id="data" required>
+        </div>
+        <div class="campo">
+          <label for="quantidade">Quantidade de ovos</label>
+          <input type="number" id="quantidade" min="1" placeholder="ex: 340" required>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="observacoes">Observações (opcional)</label>
+        <textarea id="observacoes" rows="2" placeholder="ex: 3 galinhas doentes, produção mais baixa"></textarea>
+      </div>
+      <button type="submit" class="btn-principal">Registar</button>
+    </form>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="valor" id="statHoje">—</div><div class="rotulo">Hoje</div></div>
+    <div class="stat"><div class="valor" id="statMedia7">—</div><div class="rotulo">Média 7 dias</div></div>
+    <div class="stat"><div class="valor" id="statTotal30">—</div><div class="rotulo">Total 30 dias</div></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Produção — últimos 30 dias</h2>
+    <canvas id="grafico"></canvas>
+  </div>
+
+  <div class="cartao">
+    <h2>Histórico</h2>
+    <div id="tabelaContainer"></div>
+    <div class="rodape-acoes">
+      <button class="btn-secundario" id="btnExportar">Exportar CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CHAVE = "agrivale_postura_registos";
+
+function carregarRegistos() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE)) || [];
+  } catch (e) { return []; }
+}
+function guardarRegistos(registos) {
+  localStorage.setItem(CHAVE, JSON.stringify(registos));
+}
+function hojeISO() {
+  return new Date().toISOString().split("T")[0];
+}
+function formatarDataPT(iso) {
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+document.getElementById("data").value = hojeISO();
+
+function mostrarMensagem(texto, tipo) {
+  const div = document.getElementById("mensagem");
+  div.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+  setTimeout(() => (div.innerHTML = ""), 3500);
+}
+
+document.getElementById("formRegisto").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const data = document.getElementById("data").value;
+  const quantidade = parseInt(document.getElementById("quantidade").value, 10);
+  const observacoes = document.getElementById("observacoes").value.trim();
+
+  let registos = carregarRegistos();
+  const existente = registos.findIndex((r) => r.data === data);
+
+  if (existente >= 0) {
+    if (!confirm(`Já existe um registo para ${formatarDataPT(data)} (${registos[existente].quantidade} ovos). Queres substituir?`)) {
+      return;
+    }
+    registos[existente] = { data, quantidade, observacoes };
+    mostrarMensagem("Registo atualizado.", "sucesso");
+  } else {
+    registos.push({ data, quantidade, observacoes });
+    mostrarMensagem("Registo guardado.", "sucesso");
+  }
+
+  guardarRegistos(registos);
+  document.getElementById("formRegisto").reset();
+  document.getElementById("data").value = hojeISO();
+  renderizarTudo();
+});
+
+function apagarRegisto(data) {
+  if (!confirm(`Apagar o registo de ${formatarDataPT(data)}?`)) return;
+  let registos = carregarRegistos().filter((r) => r.data !== data);
+  guardarRegistos(registos);
+  renderizarTudo();
+}
+
+function renderizarStats(registos) {
+  const hoje = hojeISO();
+  const registoHoje = registos.find((r) => r.data === hoje);
+  document.getElementById("statHoje").textContent = registoHoje ? registoHoje.quantidade : "—";
+
+  const agora = new Date();
+  const ultimos7 = registos.filter((r) => (agora - new Date(r.data)) / 86400000 <= 7);
+  const media7 = ultimos7.length ? Math.round(ultimos7.reduce((s, r) => s + r.quantidade, 0) / ultimos7.length) : 0;
+  document.getElementById("statMedia7").textContent = ultimos7.length ? media7 : "—";
+
+  const ultimos30 = registos.filter((r) => (agora - new Date(r.data)) / 86400000 <= 30);
+  const total30 = ultimos30.reduce((s, r) => s + r.quantidade, 0);
+  document.getElementById("statTotal30").textContent = ultimos30.length ? total30 : "—";
+}
+
+function renderizarTabela(registos) {
+  const container = document.getElementById("tabelaContainer");
+  if (registos.length === 0) {
+    container.innerHTML = '<div class="vazio">Ainda não há registos. Começa por registar o dia de hoje acima.</div>';
+    return;
+  }
+  const ordenados = [...registos].sort((a, b) => b.data.localeCompare(a.data));
+  let html = "<table><thead><tr><th>Data</th><th>Ovos</th><th></th></tr></thead><tbody>";
+  ordenados.forEach((r) => {
+    html += `<tr>
+      <td>${formatarDataPT(r.data)}${r.observacoes ? `<div class="obs">${r.observacoes}</div>` : ""}</td>
+      <td>${r.quantidade}</td>
+      <td><button class="btn-perigo" onclick="apagarRegisto('${r.data}')">Apagar</button></td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+function renderizarGrafico(registos) {
+  const canvas = document.getElementById("grafico");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const largura = canvas.clientWidth;
+  const altura = 180;
+  canvas.width = largura * dpr;
+  canvas.height = altura * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, largura, altura);
+
+  const agora = new Date();
+  const dias = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(agora);
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().split("T")[0];
+    const registo = registos.find((r) => r.data === iso);
+    dias.push({ data: iso, quantidade: registo ? registo.quantidade : null });
+  }
+
+  const valores = dias.map((d) => d.quantidade).filter((v) => v !== null);
+  if (valores.length === 0) {
+    ctx.fillStyle = "#999";
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Sem dados suficientes para o gráfico ainda", largura / 2, altura / 2);
+    return;
+  }
+
+  const max = Math.max(...valores) * 1.15;
+  const margemEsq = 34, margemDir = 8, margemTopo = 10, margemBaixo = 20;
+  const largUtil = largura - margemEsq - margemDir;
+  const altUtil = altura - margemTopo - margemBaixo;
+  const passoX = largUtil / (dias.length - 1);
+
+  // eixo Y — linhas guia
+  ctx.strokeStyle = "#eee";
+  ctx.fillStyle = "#999";
+  ctx.font = "10px sans-serif";
+  ctx.textAlign = "right";
+  for (let i = 0; i <= 3; i++) {
+    const y = margemTopo + (altUtil / 3) * i;
+    const valor = Math.round(max - (max / 3) * i);
+    ctx.beginPath();
+    ctx.moveTo(margemEsq, y);
+    ctx.lineTo(largura - margemDir, y);
+    ctx.stroke();
+    ctx.fillText(valor, margemEsq - 5, y + 3);
+  }
+
+  // linha de produção
+  ctx.strokeStyle = "#1E4620";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let comecou = false;
+  dias.forEach((d, i) => {
+    if (d.quantidade === null) { comecou = false; return; }
+    const x = margemEsq + passoX * i;
+    const y = margemTopo + altUtil - (d.quantidade / max) * altUtil;
+    if (!comecou) { ctx.moveTo(x, y); comecou = true; }
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // pontos dourados
+  ctx.fillStyle = "#D4A017";
+  dias.forEach((d, i) => {
+    if (d.quantidade === null) return;
+    const x = margemEsq + passoX * i;
+    const y = margemTopo + altUtil - (d.quantidade / max) * altUtil;
+    ctx.beginPath();
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function renderizarTudo() {
+  const registos = carregarRegistos();
+  renderizarStats(registos);
+  renderizarTabela(registos);
+  renderizarGrafico(registos);
+}
+
+document.getElementById("btnExportar").addEventListener("click", () => {
+  const registos = [...carregarRegistos()].sort((a, b) => a.data.localeCompare(b.data));
+  if (registos.length === 0) { mostrarMensagem("Não há registos para exportar.", "aviso"); return; }
+  let csv = "Data;Quantidade de ovos;Observações\n";
+  registos.forEach((r) => {
+    csv += `${formatarDataPT(r.data)};${r.quantidade};"${(r.observacoes || "").replace(/"/g, '""')}"\n`;
+  });
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "postura-agrivale.csv"; a.click();
+  URL.revokeObjectURL(url);
+});
+
+window.addEventListener("resize", () => renderizarGrafico(carregarRegistos()));
+renderizarTudo();
+</script>
+</body>
+</html>
